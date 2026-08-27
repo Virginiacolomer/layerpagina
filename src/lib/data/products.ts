@@ -156,3 +156,7 @@ export function getProductsByCategory(categorySlug: string) {
 export function getProductBySlug(slug: string) {
   return PRODUCTS.find((p) => p.slug === slug);
 }
+
+export function getProductById(id: string) {
+  return PRODUCTS.find((p) => p.id === id);
+}

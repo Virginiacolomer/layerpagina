@@ -6,6 +6,16 @@ import { createUser } from "@/lib/data/users";
 
 export type FormState = { error: string } | undefined;
 
+// Sólo se permiten rutas relativas propias del sitio (evita que un
+// ?callbackUrl= manipulado mande al usuario a un dominio externo tras
+// loguearse).
+function safeRedirect(value: FormDataEntryValue | null, fallback: string) {
+  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
+    return value;
+  }
+  return fallback;
+}
+
 export async function loginAction(
   _prevState: FormState,
   formData: FormData,
@@ -14,7 +24,7 @@ export async function loginAction(
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
-      redirectTo: "/perfil",
+      redirectTo: safeRedirect(formData.get("redirectTo"), "/perfil"),
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -43,7 +53,11 @@ export async function registerAction(
   }
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/perfil" });
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: safeRedirect(formData.get("redirectTo"), "/perfil"),
+    });
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "La cuenta se creó, pero no se pudo iniciar sesión. Probá ingresar de nuevo." };

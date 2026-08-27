@@ -1,12 +1,26 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import { getOrdersByUser } from "@/lib/data/orders";
+import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Mi cuenta | Layer" };
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pendiente",
+  PAID: "Pagado",
+  PREPARING: "En preparación",
+  SHIPPED: "Enviado",
+  DELIVERED: "Entregado",
+  CANCELLED: "Cancelado",
+};
 
 export default async function PerfilPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  const orders = getOrdersByUser(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-lg flex-1 px-6 py-16">
@@ -21,7 +35,28 @@ export default async function PerfilPage() {
 
       <div className="mt-6 rounded-xl border border-brand-gray-200 p-5">
         <p className="font-medium text-neutral-900">Mis pedidos</p>
-        <p className="mt-1 text-sm text-neutral-500">Todavía no hiciste ningún pedido.</p>
+        {orders.length === 0 ? (
+          <p className="mt-1 text-sm text-neutral-500">Todavía no hiciste ningún pedido.</p>
+        ) : (
+          <div className="mt-3 flex flex-col gap-3">
+            {orders.map((order) => (
+              <Link
+                key={order.id}
+                href={`/pedido/${order.id}`}
+                className="flex items-center justify-between rounded-lg border border-brand-gray-200 px-4 py-3 text-sm hover:border-brand"
+              >
+                <div>
+                  <p className="font-medium text-neutral-900">Pedido #{order.id}</p>
+                  <p className="text-neutral-500">
+                    {new Date(order.createdAt).toLocaleDateString("es-AR")} ·{" "}
+                    {STATUS_LABELS[order.status] ?? order.status}
+                  </p>
+                </div>
+                <p className="font-semibold text-brand">{formatPrice(order.total)}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <form

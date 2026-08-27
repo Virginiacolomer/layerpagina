@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Nunito_Sans } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { CartProvider } from "@/lib/cart-context";
 import "./globals.css";
 
 // Placeholders for the licensed brand fonts (Agrandir Grand / Anaphora) until
@@ -30,9 +31,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${fontHeading.variable} ${fontBody.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <SiteHeader />
-        <main className="flex flex-1 flex-col">{children}</main>
-        <SiteFooter />
+        <CartProvider>
+          <SiteHeader />
+          <main className="flex flex-1 flex-col">{children}</main>
+          <SiteFooter />
+        </CartProvider>
       </body>
     </html>
   );

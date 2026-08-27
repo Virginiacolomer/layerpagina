@@ -4,11 +4,12 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction } from "@/lib/actions/auth-actions";
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {callbackUrl && <input type="hidden" name="redirectTo" value={callbackUrl} />}
       <div>
         <label htmlFor="email" className="text-sm font-medium text-neutral-800">
           Email

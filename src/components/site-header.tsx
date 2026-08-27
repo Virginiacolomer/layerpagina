@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { CartIcon } from "@/components/cart-icon";
 import { INSTAGRAM_URL, WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 
 export async function SiteHeader() {
@@ -19,6 +20,7 @@ export async function SiteHeader() {
           <Link href={session?.user ? "/perfil" : "/login"} className="hover:text-brand">
             {session?.user ? "Mi cuenta" : "Ingresar"}
           </Link>
+          <CartIcon />
         </nav>
 
         <div className="flex items-center gap-3 text-sm">
