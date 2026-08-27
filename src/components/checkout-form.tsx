@@ -129,8 +129,9 @@ export function CheckoutForm({ defaultName }: { defaultName: string }) {
         </div>
 
         <p className="text-sm text-neutral-500">
-          El costo y método de envío (Correo Argentino o Andreani) se coordina por WhatsApp una
-          vez confirmado el pedido.
+          El pago se hace por transferencia — te vamos a mostrar el alias al confirmar. El costo y
+          método de envío (Correo Argentino o Andreani) se coordina por WhatsApp una vez
+          confirmado el pago.
         </p>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

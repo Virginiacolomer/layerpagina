@@ -4,6 +4,8 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { getOrderById } from "@/lib/data/orders";
 import { WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
+import { BANK_TRANSFER } from "@/lib/bank";
+import { CopyField } from "@/components/copy-field";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedido confirmado | Layer" };
@@ -16,15 +18,33 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   const order = getOrderById(id);
   if (!order || order.userId !== session.user.id) notFound();
 
-  const whatsappMessage = `Hola! Quiero coordinar el pago y envío de mi pedido #${order.id} (total ${formatPrice(order.total)}).`;
+  const whatsappMessage = `Hola! Ya hice la transferencia de mi pedido #${order.id} (total ${formatPrice(order.total)}). Te paso el comprobante.`;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-10">
-      <h1 className="text-3xl font-bold text-neutral-900">¡Gracias por tu pedido!</h1>
+      <h1 className="text-3xl font-bold text-neutral-900">¡Gracias por tu compra!</h1>
       <p className="mt-2 text-neutral-600">
-        Registramos tu pedido <strong>#{order.id}</strong>. Te vamos a escribir por WhatsApp para
-        coordinar el pago y el envío (Correo Argentino o Andreani).
+        Registramos tu pedido <strong>#{order.id}</strong>. Para confirmarlo, transferí el total
+        al siguiente alias. En cuanto verifiquemos el pago, tu pedido queda confirmado.
       </p>
+
+      <div className="mt-6 rounded-xl border-2 border-brand bg-brand-gray-100 p-5">
+        <div className="flex items-baseline justify-between">
+          <p className="font-semibold text-neutral-900">Transferir</p>
+          <p className="text-xl font-bold text-brand">{formatPrice(order.total)}</p>
+        </div>
+        <div className="mt-3 flex flex-col gap-2">
+          {BANK_TRANSFER.alias && <CopyField label="Alias" value={BANK_TRANSFER.alias} />}
+          {BANK_TRANSFER.cbu && <CopyField label="CBU" value={BANK_TRANSFER.cbu} />}
+          {BANK_TRANSFER.holder && (
+            <p className="px-4 text-xs text-neutral-500">Titular: {BANK_TRANSFER.holder}</p>
+          )}
+        </div>
+        <p className="mt-3 text-sm text-neutral-600">
+          Tu pago (y con eso tu pedido) va a quedar pendiente de confirmación hasta que lo
+          verifiquemos. ¡Gracias por tu compra!
+        </p>
+      </div>
 
       <div className="mt-6 rounded-xl border border-brand-gray-200 p-5">
         <p className="font-semibold text-neutral-900">Resumen</p>
@@ -75,7 +95,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
             rel="noopener noreferrer"
             className="rounded-full bg-brand px-6 py-3 font-semibold text-white transition hover:opacity-90"
           >
-            Coordinar por WhatsApp
+            Enviar comprobante por WhatsApp
           </a>
         )}
         <Link
