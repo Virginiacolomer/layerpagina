@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { INSTAGRAM_URL, WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await auth();
+
   return (
     <header className="border-b border-brand-gray-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
@@ -12,6 +15,9 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-6 text-sm font-medium text-neutral-700 sm:flex">
           <Link href="/productos" className="hover:text-brand">
             Catálogo
+          </Link>
+          <Link href={session?.user ? "/perfil" : "/login"} className="hover:text-brand">
+            {session?.user ? "Mi cuenta" : "Ingresar"}
           </Link>
         </nav>
 
