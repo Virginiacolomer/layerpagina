@@ -15,6 +15,7 @@ export type OrderItem = {
   variantId?: string;
   productName: string;
   variantLabel?: string;
+  colors: string[];
   quantity: number;
   unitPrice: number;
 };
@@ -74,6 +75,7 @@ function toOrder(row: OrderRow): Order {
       variantId: item.variantId ?? undefined,
       productName: item.productName,
       variantLabel: item.variantLabel ?? undefined,
+      colors: item.colors,
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
     })),
@@ -116,6 +118,7 @@ export async function createOrder(input: NewOrderInput): Promise<Order> {
           variantId: item.variantId ?? null,
           productName: item.productName,
           variantLabel: item.variantLabel ?? null,
+          colors: item.colors ?? [],
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),

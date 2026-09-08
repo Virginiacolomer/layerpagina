@@ -6,6 +6,7 @@ import { getOrderById } from "@/lib/data/orders";
 import { WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 import { BANK_TRANSFER } from "@/lib/bank";
 import { CopyField } from "@/components/copy-field";
+import { ColorList } from "@/components/color-list";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedido confirmado | Layer" };
@@ -54,6 +55,9 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               <span>
                 {item.productName}
                 {item.variantLabel ? ` (${item.variantLabel})` : ""} × {item.quantity}
+                {item.colors.length > 0 && (
+                  <ColorList colors={item.colors} className="mt-0.5 block" />
+                )}
               </span>
               <span>{formatPrice(item.unitPrice * item.quantity)}</span>
             </div>

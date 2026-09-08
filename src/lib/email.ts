@@ -20,7 +20,9 @@ export async function sendNewOrderEmail(order: Order) {
   const itemsHtml = order.items
     .map(
       (item) =>
-        `<li>${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""} × ${item.quantity} — ${formatPrice(item.unitPrice * item.quantity)}</li>`,
+        `<li>${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""}${
+          item.colors.length > 0 ? ` — colores: ${item.colors.join(", ")}` : ""
+        } × ${item.quantity} — ${formatPrice(item.unitPrice * item.quantity)}</li>`,
     )
     .join("");
 

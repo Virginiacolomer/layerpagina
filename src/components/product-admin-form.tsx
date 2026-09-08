@@ -41,6 +41,7 @@ export function ProductAdminForm({ product }: { product?: Product }) {
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(String(product?.price ?? ""));
   const [stock, setStock] = useState(String(product?.stock ?? ""));
+  const [colorCount, setColorCount] = useState(String(product?.colorCount ?? 0));
   const [active, setActive] = useState(product?.active ?? true);
   const [categorySlug, setCategorySlug] = useState(product?.categorySlug ?? CATEGORIES[0].slug);
   const [variants, setVariants] = useState<VariantDraft[]>(
@@ -106,8 +107,13 @@ export function ProductAdminForm({ product }: { product?: Product }) {
 
     const parsedPrice = Number(price);
     const parsedStock = Number(stock);
+    const parsedColorCount = Number(colorCount);
     if (!name.trim() || !slug.trim()) {
       setError("Completá el nombre y el slug.");
+      return;
+    }
+    if (!Number.isInteger(parsedColorCount) || parsedColorCount < 0 || parsedColorCount > 10) {
+      setError("Los colores a elegir tienen que ser un número entre 0 y 10.");
       return;
     }
     if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
@@ -131,6 +137,7 @@ export function ProductAdminForm({ product }: { product?: Product }) {
       description: description.trim(),
       price: parsedPrice,
       stock: parsedStock,
+      colorCount: parsedColorCount,
       active,
       categorySlug,
       variants: variants.map((v) => ({
@@ -281,6 +288,25 @@ export function ProductAdminForm({ product }: { product?: Product }) {
             className="mt-1 w-full rounded-lg border border-brand-gray-300 px-3 py-2 outline-none focus:border-brand"
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="colorCount" className="text-sm font-medium text-neutral-800">
+          Colores a elegir
+        </label>
+        <input
+          id="colorCount"
+          type="number"
+          min={0}
+          max={10}
+          value={colorCount}
+          onChange={(e) => setColorCount(e.target.value)}
+          className="mt-1 w-24 rounded-lg border border-brand-gray-300 px-3 py-2 outline-none focus:border-brand"
+        />
+        <p className="mt-1 text-xs text-neutral-500">
+          Cuántos colores de la paleta tiene que elegir el cliente al comprar. 0 = el producto
+          no pide color.
+        </p>
       </div>
 
       <div>

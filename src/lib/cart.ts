@@ -19,6 +19,7 @@ export async function resolveCartLines(lines: CartLine[]): Promise<ResolvedCartL
       {
         product,
         variant,
+        colors: line.colors ?? [],
         quantity: line.quantity,
         unitPrice,
         lineTotal: unitPrice * line.quantity,

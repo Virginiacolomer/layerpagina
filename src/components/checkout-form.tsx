@@ -153,12 +153,15 @@ export function CheckoutForm({ defaultName }: { defaultName: string }) {
         <div className="mt-3 flex flex-col gap-2">
           {resolvedLines.map((line) => (
             <div
-              key={`${line.product.id}:${line.variant?.id ?? ""}`}
+              key={`${line.product.id}:${line.variant?.id ?? ""}:${line.colors.join("|")}`}
               className="flex justify-between text-sm text-neutral-700"
             >
               <span>
                 {line.product.name}
                 {line.variant ? ` (${line.variant.value})` : ""} × {line.quantity}
+                {line.colors.length > 0 && (
+                  <span className="block text-xs text-neutral-500">{line.colors.join(", ")}</span>
+                )}
               </span>
               <span>{formatPrice(line.lineTotal)}</span>
             </div>

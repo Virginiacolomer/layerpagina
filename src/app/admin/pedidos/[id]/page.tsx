@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOrderById, type OrderStatus } from "@/lib/data/orders";
 import { updateOrderStatusFormAction } from "@/lib/actions/admin-actions";
+import { ColorList } from "@/components/color-list";
 import { formatPrice } from "@/lib/format";
 import { whatsappLink } from "@/lib/contact";
 
@@ -68,6 +69,9 @@ export default async function AdminPedidoDetailPage({
               <span>
                 {item.productName}
                 {item.variantLabel ? ` (${item.variantLabel})` : ""} × {item.quantity}
+                {item.colors.length > 0 && (
+                  <ColorList colors={item.colors} className="mt-0.5 block" />
+                )}
               </span>
               <span>{formatPrice(item.unitPrice * item.quantity)}</span>
             </div>

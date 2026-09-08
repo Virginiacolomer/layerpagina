@@ -22,20 +22,29 @@ type CartContextValue = {
   discount: number;
   couponError: string | null;
   applyingCoupon: boolean;
-  addItem: (productId: string, variantId: string | undefined, quantity: number) => void;
-  removeItem: (productId: string, variantId?: string) => void;
-  setQuantity: (productId: string, variantId: string | undefined, quantity: number) => void;
+  addItem: (
+    productId: string,
+    variantId: string | undefined,
+    quantity: number,
+    colors?: string[],
+  ) => void;
+  removeItem: (line: LineRef) => void;
+  setQuantity: (line: LineRef, quantity: number) => void;
   applyCoupon: (code: string) => void;
   removeCoupon: () => void;
   clear: () => void;
 };
 
+type LineRef = { productId: string; variantId?: string; colors?: string[] };
+
 const CartContext = createContext<CartContextValue | null>(null);
 const LINES_KEY = "layer-cart";
 const COUPON_KEY = "layer-cart-coupon";
 
-function lineKey(productId: string, variantId?: string) {
-  return `${productId}:${variantId ?? ""}`;
+// Una línea del carrito se identifica por producto + variante + colores
+// elegidos (dos combinaciones de colores distintas son líneas distintas).
+function lineKey(ref: LineRef) {
+  return `${ref.productId}:${ref.variantId ?? ""}:${(ref.colors ?? []).join("|")}`;
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -129,32 +138,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotal, hydrated]);
 
-  const addItem: CartContextValue["addItem"] = (productId, variantId, quantity) => {
+  const addItem: CartContextValue["addItem"] = (productId, variantId, quantity, colors) => {
     setLines((prev) => {
-      const key = lineKey(productId, variantId);
-      const existing = prev.find((l) => lineKey(l.productId, l.variantId) === key);
-      if (existing) {
+      const key = lineKey({ productId, variantId, colors });
+      if (prev.some((l) => lineKey(l) === key)) {
         return prev.map((l) =>
-          lineKey(l.productId, l.variantId) === key
-            ? { ...l, quantity: l.quantity + quantity }
-            : l,
+          lineKey(l) === key ? { ...l, quantity: l.quantity + quantity } : l,
         );
       }
-      return [...prev, { productId, variantId, quantity }];
+      return [...prev, { productId, variantId, quantity, colors }];
     });
   };
 
-  const removeItem: CartContextValue["removeItem"] = (productId, variantId) => {
-    const key = lineKey(productId, variantId);
-    setLines((prev) => prev.filter((l) => lineKey(l.productId, l.variantId) !== key));
+  const removeItem: CartContextValue["removeItem"] = (ref) => {
+    const key = lineKey(ref);
+    setLines((prev) => prev.filter((l) => lineKey(l) !== key));
   };
 
-  const setQuantity: CartContextValue["setQuantity"] = (productId, variantId, quantity) => {
-    const key = lineKey(productId, variantId);
+  const setQuantity: CartContextValue["setQuantity"] = (ref, quantity) => {
+    const key = lineKey(ref);
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => lineKey(l.productId, l.variantId) !== key)
-        : prev.map((l) => (lineKey(l.productId, l.variantId) === key ? { ...l, quantity } : l)),
+        ? prev.filter((l) => lineKey(l) !== key)
+        : prev.map((l) => (lineKey(l) === key ? { ...l, quantity } : l)),
     );
   };
 

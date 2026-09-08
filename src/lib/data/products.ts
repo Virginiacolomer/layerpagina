@@ -23,6 +23,7 @@ function toProduct(row: ProductRow): Product {
     price: Number(row.price),
     stock: row.stock,
     active: row.active,
+    colorCount: row.colorCount,
     categorySlug: row.category.slug,
     variants: row.variants.map((v) => ({
       id: v.id,
@@ -127,6 +128,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
       price: input.price,
       stock: input.stock,
       active: input.active,
+      colorCount: input.colorCount,
       categoryId,
       variants: { create: variantCreateData(input.variants) },
     },
@@ -158,6 +160,7 @@ export async function updateProduct(
           price: input.price,
           stock: input.stock,
           active: input.active,
+          colorCount: input.colorCount,
           categoryId,
           variants: { create: variantCreateData(input.variants) },
         },

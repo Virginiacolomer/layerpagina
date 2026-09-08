@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { ProductImage } from "@/components/product-image";
+import { ColorList } from "@/components/color-list";
 import { formatPrice } from "@/lib/format";
 
 export default function CarritoPage() {
@@ -40,66 +41,70 @@ export default function CarritoPage() {
       <h1 className="text-3xl font-bold text-neutral-900">Tu carrito</h1>
 
       <div className="mt-6 flex flex-col gap-4">
-        {resolvedLines.map((line) => (
-          <div
-            key={`${line.product.id}:${line.variant?.id ?? ""}`}
-            className="flex items-center gap-4 rounded-xl border border-brand-gray-200 p-4"
-          >
-            <div className="w-20 shrink-0">
-              <ProductImage
-                src={line.product.images[0]}
-                alt={line.product.name}
-                seed={line.product.id}
-                sizes="80px"
-              />
-            </div>
-
-            <div className="flex-1">
-              <p className="font-semibold text-neutral-900">{line.product.name}</p>
-              {line.variant && (
-                <p className="text-sm text-neutral-500">{line.variant.value}</p>
-              )}
-              <p className="mt-1 font-medium text-brand">{formatPrice(line.unitPrice)}</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  cart.setQuantity(line.product.id, line.variant?.id, line.quantity - 1)
-                }
-                className="h-8 w-8 rounded-full border border-brand-gray-300 text-neutral-600 hover:border-brand hover:text-brand"
-                aria-label="Restar cantidad"
-              >
-                −
-              </button>
-              <span className="w-6 text-center">{line.quantity}</span>
-              <button
-                type="button"
-                onClick={() =>
-                  cart.setQuantity(line.product.id, line.variant?.id, line.quantity + 1)
-                }
-                className="h-8 w-8 rounded-full border border-brand-gray-300 text-neutral-600 hover:border-brand hover:text-brand"
-                aria-label="Sumar cantidad"
-              >
-                +
-              </button>
-            </div>
-
-            <p className="w-24 text-right font-semibold text-neutral-900">
-              {formatPrice(line.lineTotal)}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => cart.removeItem(line.product.id, line.variant?.id)}
-              className="text-sm text-neutral-400 hover:text-red-600"
-              aria-label={`Quitar ${line.product.name}`}
+        {resolvedLines.map((line) => {
+          const ref = {
+            productId: line.product.id,
+            variantId: line.variant?.id,
+            colors: line.colors,
+          };
+          return (
+            <div
+              key={`${line.product.id}:${line.variant?.id ?? ""}:${line.colors.join("|")}`}
+              className="flex items-center gap-4 rounded-xl border border-brand-gray-200 p-4"
             >
-              Quitar
-            </button>
-          </div>
-        ))}
+              <div className="w-20 shrink-0">
+                <ProductImage
+                  src={line.product.images[0]}
+                  alt={line.product.name}
+                  seed={line.product.id}
+                  sizes="80px"
+                />
+              </div>
+
+              <div className="flex-1">
+                <p className="font-semibold text-neutral-900">{line.product.name}</p>
+                {line.variant && (
+                  <p className="text-sm text-neutral-500">{line.variant.value}</p>
+                )}
+                {line.colors.length > 0 && <ColorList colors={line.colors} />}
+                <p className="mt-1 font-medium text-brand">{formatPrice(line.unitPrice)}</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => cart.setQuantity(ref, line.quantity - 1)}
+                  className="h-8 w-8 rounded-full border border-brand-gray-300 text-neutral-600 hover:border-brand hover:text-brand"
+                  aria-label="Restar cantidad"
+                >
+                  −
+                </button>
+                <span className="w-6 text-center">{line.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => cart.setQuantity(ref, line.quantity + 1)}
+                  className="h-8 w-8 rounded-full border border-brand-gray-300 text-neutral-600 hover:border-brand hover:text-brand"
+                  aria-label="Sumar cantidad"
+                >
+                  +
+                </button>
+              </div>
+
+              <p className="w-24 text-right font-semibold text-neutral-900">
+                {formatPrice(line.lineTotal)}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => cart.removeItem(ref)}
+                className="text-sm text-neutral-400 hover:text-red-600"
+                aria-label={`Quitar ${line.product.name}`}
+              >
+                Quitar
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-8 flex flex-col items-end gap-4">

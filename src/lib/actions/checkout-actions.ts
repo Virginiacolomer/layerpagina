@@ -54,6 +54,7 @@ export async function placeOrderAction(
       variantId: l.variant?.id,
       productName: l.product.name,
       variantLabel: l.variant?.value,
+      colors: l.colors,
       quantity: l.quantity,
       unitPrice: l.unitPrice,
     })),
