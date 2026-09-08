@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
+import { ProductImage } from "@/components/product-image";
 import type { Product } from "@/lib/catalog-types";
 import { formatPrice } from "@/lib/format";
 
@@ -9,7 +9,7 @@ export function ProductCard({ product }: { product: Product }) {
       href={`/productos/${product.slug}`}
       className="group flex flex-col gap-3 rounded-xl border border-brand-gray-200 p-3 transition hover:border-brand hover:shadow-sm"
     >
-      <ProductImagePlaceholder seed={product.id} />
+      <ProductImage src={product.images[0]} alt={product.name} seed={product.id} />
       <div>
         <h3 className="font-semibold leading-snug text-neutral-900 group-hover:text-brand">
           {product.name}

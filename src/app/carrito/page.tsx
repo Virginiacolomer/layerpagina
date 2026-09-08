@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
+import { ProductImage } from "@/components/product-image";
 import { formatPrice } from "@/lib/format";
 
 export default function CarritoPage() {
@@ -46,7 +46,12 @@ export default function CarritoPage() {
             className="flex items-center gap-4 rounded-xl border border-brand-gray-200 p-4"
           >
             <div className="w-20 shrink-0">
-              <ProductImagePlaceholder seed={line.product.id} />
+              <ProductImage
+                src={line.product.images[0]}
+                alt={line.product.name}
+                seed={line.product.id}
+                sizes="80px"
+              />
             </div>
 
             <div className="flex-1">

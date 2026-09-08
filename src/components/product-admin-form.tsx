@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/catalog-types";
 import { CATEGORIES, slugify } from "@/lib/categories";
 import { createProductAction, updateProductAction } from "@/lib/actions/admin-actions";
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 type VariantDraft = {
   key: string;
@@ -46,6 +50,32 @@ export function ProductAdminForm({ product }: { product?: Product }) {
       stock: String(v.stock),
     })),
   );
+
+  // Fotos: las ya guardadas se llevan como URLs; las nuevas como File hasta
+  // que se envía el formulario (la subida a Storage la hace la server action).
+  const [keptImages, setKeptImages] = useState<string[]>(product?.images ?? []);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const newPreviews = useMemo(
+    () => newFiles.map((file) => URL.createObjectURL(file)),
+    [newFiles],
+  );
+  useEffect(() => {
+    return () => newPreviews.forEach((url) => URL.revokeObjectURL(url));
+  }, [newPreviews]);
+
+  function handleFilesSelected(fileList: FileList | null) {
+    if (!fileList) return;
+    const picked = Array.from(fileList);
+    const invalid = picked.find(
+      (f) => !ACCEPTED_IMAGE_TYPES.includes(f.type) || f.size > MAX_IMAGE_BYTES,
+    );
+    if (invalid) {
+      setError("Cada foto debe ser JPG, PNG, WebP o AVIF y pesar hasta 5 MB.");
+      return;
+    }
+    setError(null);
+    setNewFiles((prev) => [...prev, ...picked]);
+  }
 
   function handleNameChange(value: string) {
     setName(value);
@@ -100,8 +130,8 @@ export function ProductAdminForm({ product }: { product?: Product }) {
 
     startTransition(async () => {
       const result = product
-        ? await updateProductAction(product.id, input)
-        : await createProductAction(input);
+        ? await updateProductAction(product.id, input, keptImages, newFiles)
+        : await createProductAction(input, newFiles);
       if ("error" in result) {
         setError(result.error);
         return;
@@ -150,6 +180,59 @@ export function ProductAdminForm({ product }: { product?: Product }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 w-full rounded-lg border border-brand-gray-300 px-3 py-2 outline-none focus:border-brand"
+        />
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-neutral-800">Fotos</p>
+        <p className="text-xs text-neutral-500">
+          JPG, PNG, WebP o AVIF, hasta 5 MB. La primera es la principal.
+        </p>
+
+        {(keptImages.length > 0 || newFiles.length > 0) && (
+          <div className="mt-2 flex flex-wrap gap-3">
+            {keptImages.map((url) => (
+              <div key={url} className="relative h-24 w-24 overflow-hidden rounded-lg border border-brand-gray-200">
+                <Image src={url} alt="" fill sizes="96px" className="object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setKeptImages((prev) => prev.filter((u) => u !== url))}
+                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1.5 text-xs font-bold text-neutral-700 hover:text-red-600"
+                  aria-label="Quitar foto"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {newFiles.map((file, i) => (
+              <div
+                key={`${file.name}-${i}`}
+                className="relative h-24 w-24 overflow-hidden rounded-lg border border-dashed border-brand"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={newPreviews[i]} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setNewFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1.5 text-xs font-bold text-neutral-700 hover:text-red-600"
+                  aria-label="Quitar foto"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <input
+          type="file"
+          accept={ACCEPTED_IMAGE_TYPES.join(",")}
+          multiple
+          onChange={(e) => {
+            handleFilesSelected(e.target.files);
+            e.target.value = "";
+          }}
+          className="mt-2 block text-sm text-neutral-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-neutral-700 hover:file:bg-brand-gray-200"
         />
       </div>
 

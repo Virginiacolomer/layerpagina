@@ -8,6 +8,7 @@ export type { Product, ProductVariant } from "@/lib/catalog-types";
 
 const productInclude = {
   variants: { orderBy: { id: "asc" } },
+  images: { orderBy: { order: "asc" } },
   category: true,
 } satisfies Prisma.ProductInclude;
 
@@ -30,6 +31,7 @@ function toProduct(row: ProductRow): Product {
       priceModifier: Number(v.priceModifier),
       stock: v.stock,
     })),
+    images: row.images.map((img) => img.url),
   };
 }
 
@@ -93,7 +95,9 @@ export async function getAllProductsForAdmin(): Promise<Product[]> {
   return rows.map(toProduct);
 }
 
-type ProductInput = Omit<Product, "id">;
+// Las imágenes se manejan aparte (subida a Storage en la server action, ver
+// syncProductImages), así que el input de datos no las incluye.
+export type ProductInput = Omit<Product, "id" | "images">;
 
 async function categoryIdForSlug(slug: string): Promise<string> {
   const category = await prisma.category.findUnique({ where: { slug } });
@@ -197,4 +201,16 @@ export async function toggleProductActive(id: string): Promise<Product | undefin
     include: productInclude,
   });
   return toProduct(row);
+}
+
+// Reemplaza todas las filas ProductImage del producto por `urls`, en ese orden.
+// Las subidas/borrados en Storage los hace la server action; acá sólo se
+// persiste la lista final.
+export async function syncProductImages(productId: string, urls: string[]): Promise<void> {
+  await prisma.$transaction([
+    prisma.productImage.deleteMany({ where: { productId } }),
+    prisma.productImage.createMany({
+      data: urls.map((url, index) => ({ productId, url, order: index })),
+    }),
+  ]);
 }

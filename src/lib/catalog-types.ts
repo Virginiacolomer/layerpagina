@@ -20,6 +20,8 @@ export type Product = {
   active: boolean;
   categorySlug: string;
   variants: ProductVariant[];
+  // URLs públicas de las fotos, en orden. Vacío = se muestra el placeholder.
+  images: string[];
 };
 
 export type CartLine = {

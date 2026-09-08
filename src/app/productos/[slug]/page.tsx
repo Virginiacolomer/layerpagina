@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
+import { ProductGallery } from "@/components/product-gallery";
 import { ProductDetailActions } from "@/components/product-detail-actions";
 import { getAllCategories, getProductBySlug } from "@/lib/data/products";
 import { WHATSAPP_NUMBERS } from "@/lib/contact";
@@ -41,7 +41,7 @@ export default async function ProductoPage({
 
       <div className="mt-4 grid gap-10 sm:grid-cols-2">
         <div className="sm:max-w-md">
-          <ProductImagePlaceholder seed={product.id} />
+          <ProductGallery images={product.images} name={product.name} seed={product.id} />
         </div>
 
         <div>
