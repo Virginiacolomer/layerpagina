@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/catalog-types";
 import { CATEGORIES, slugify } from "@/lib/categories";
 import { createProductAction, updateProductAction } from "@/lib/actions/admin-actions";
+import { downscaleImage } from "@/lib/image-resize";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// Tope del archivo original que se elige; después se achica en el navegador.
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 type VariantDraft = {
   key: string;
@@ -51,10 +53,11 @@ export function ProductAdminForm({ product }: { product?: Product }) {
     })),
   );
 
-  // Fotos: las ya guardadas se llevan como URLs; las nuevas como File hasta
-  // que se envía el formulario (la subida a Storage la hace la server action).
+  // Fotos: las ya guardadas se llevan como URLs; las nuevas como File (ya
+  // achicadas en el navegador, ver downscaleImage) hasta que se envía el form.
   const [keptImages, setKeptImages] = useState<string[]>(product?.images ?? []);
   const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [processingImages, setProcessingImages] = useState(false);
   const newPreviews = useMemo(
     () => newFiles.map((file) => URL.createObjectURL(file)),
     [newFiles],
@@ -63,18 +66,29 @@ export function ProductAdminForm({ product }: { product?: Product }) {
     return () => newPreviews.forEach((url) => URL.revokeObjectURL(url));
   }, [newPreviews]);
 
-  function handleFilesSelected(fileList: FileList | null) {
-    if (!fileList) return;
+  async function handleFilesSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
     const picked = Array.from(fileList);
-    const invalid = picked.find(
-      (f) => !ACCEPTED_IMAGE_TYPES.includes(f.type) || f.size > MAX_IMAGE_BYTES,
-    );
-    if (invalid) {
-      setError("Cada foto debe ser JPG, PNG, WebP o AVIF y pesar hasta 5 MB.");
+    if (picked.some((f) => f.size > MAX_IMAGE_BYTES)) {
+      setError("Cada foto tiene que pesar menos de 15 MB.");
       return;
     }
     setError(null);
-    setNewFiles((prev) => [...prev, ...picked]);
+    setProcessingImages(true);
+    try {
+      const resized: File[] = [];
+      for (const file of picked) {
+        const result = await downscaleImage(file);
+        if (!result.ok) {
+          setError(result.reason);
+          return;
+        }
+        resized.push(result.file);
+      }
+      setNewFiles((prev) => [...prev, ...resized]);
+    } finally {
+      setProcessingImages(false);
+    }
   }
 
   function handleNameChange(value: string) {
@@ -186,7 +200,7 @@ export function ProductAdminForm({ product }: { product?: Product }) {
       <div>
         <p className="text-sm font-medium text-neutral-800">Fotos</p>
         <p className="text-xs text-neutral-500">
-          JPG, PNG, WebP o AVIF, hasta 5 MB. La primera es la principal.
+          JPG, PNG, WebP o AVIF. Se achican solas antes de subir. La primera es la principal.
         </p>
 
         {(keptImages.length > 0 || newFiles.length > 0) && (
@@ -228,12 +242,16 @@ export function ProductAdminForm({ product }: { product?: Product }) {
           type="file"
           accept={ACCEPTED_IMAGE_TYPES.join(",")}
           multiple
+          disabled={processingImages}
           onChange={(e) => {
-            handleFilesSelected(e.target.files);
+            void handleFilesSelected(e.target.files);
             e.target.value = "";
           }}
-          className="mt-2 block text-sm text-neutral-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-neutral-700 hover:file:bg-brand-gray-200"
+          className="mt-2 block text-sm text-neutral-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-neutral-700 hover:file:bg-brand-gray-200 disabled:opacity-50"
         />
+        {processingImages && (
+          <p className="mt-1 text-xs text-neutral-500">Procesando fotos…</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -351,7 +369,7 @@ export function ProductAdminForm({ product }: { product?: Product }) {
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || processingImages}
         className="mt-2 w-fit rounded-full bg-brand px-6 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar"}

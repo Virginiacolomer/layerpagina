@@ -16,9 +16,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Fotos de producto: hasta ~5 MB cada una y varias por envío, más el
-      // overhead de multipart.
-      bodySizeLimit: "20mb",
+      // Las fotos se achican en el navegador (ver src/lib/image-resize.ts), así
+      // que el body real es de cientos de KB. En Vercel el límite duro de la
+      // plataforma es ~4,5 MB igual; esto es sólo el tope de Next.
+      bodySizeLimit: "10mb",
     },
   },
 };
