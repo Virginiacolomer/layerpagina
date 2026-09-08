@@ -5,6 +5,7 @@ import { verifyUserCredentials } from "@/lib/data/users";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  debug: process.env.AUTH_DEBUG === "true",
   providers: [
     Credentials({
       credentials: {
@@ -15,7 +16,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email;
         const password = credentials?.password;
         if (typeof email !== "string" || typeof password !== "string") return null;
-        return verifyUserCredentials(email, password);
+        try {
+          return await verifyUserCredentials(email, password);
+        } catch (error) {
+          console.error("[auth] authorize failed:", error);
+          throw error;
+        }
       },
     }),
   ],
