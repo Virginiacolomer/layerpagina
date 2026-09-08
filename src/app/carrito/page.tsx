@@ -3,17 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { resolveCartLines } from "@/lib/cart";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { formatPrice } from "@/lib/format";
 
 export default function CarritoPage() {
   const cart = useCart();
   const [couponInput, setCouponInput] = useState("");
-  const resolvedLines = resolveCartLines(cart.lines);
+  const resolvedLines = cart.resolvedLines;
   const total = cart.subtotal - cart.discount;
 
-  if (resolvedLines.length === 0) {
+  if (cart.lines.length === 0) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
         <h1 className="text-2xl font-bold text-neutral-900">Tu carrito está vacío</h1>
@@ -23,6 +22,15 @@ export default function CarritoPage() {
         >
           Ver catálogo
         </Link>
+      </div>
+    );
+  }
+
+  if (!cart.pricesLoaded) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-6 py-10">
+        <h1 className="text-3xl font-bold text-neutral-900">Tu carrito</h1>
+        <p className="mt-6 text-neutral-500">Cargando…</p>
       </div>
     );
   }

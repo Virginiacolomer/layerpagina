@@ -27,7 +27,7 @@ export async function createProductAction(input: ProductInput): Promise<ActionRe
     return { error: "Nombre y slug son obligatorios." };
   }
   try {
-    createProduct(input);
+    await createProduct(input);
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se pudo crear el producto." };
   }
@@ -45,9 +45,9 @@ export async function updateProductAction(
   if (!input.name.trim() || !input.slug.trim()) {
     return { error: "Nombre y slug son obligatorios." };
   }
-  const previous = getProductById(id);
+  const previous = await getProductById(id);
   try {
-    const updated = updateProduct(id, input);
+    const updated = await updateProduct(id, input);
     if (!updated) return { error: "Producto no encontrado." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se pudo actualizar el producto." };
@@ -62,7 +62,7 @@ export async function updateProductAction(
 export async function deleteProductFormAction(formData: FormData) {
   await assertAdmin();
   const id = String(formData.get("id"));
-  deleteProduct(id);
+  await deleteProduct(id);
   revalidatePath("/admin/productos");
   revalidatePath("/productos");
 }
@@ -70,7 +70,7 @@ export async function deleteProductFormAction(formData: FormData) {
 export async function toggleProductActiveFormAction(formData: FormData) {
   await assertAdmin();
   const id = String(formData.get("id"));
-  toggleProductActive(id);
+  await toggleProductActive(id);
   revalidatePath("/admin/productos");
   revalidatePath("/productos");
 }
@@ -79,7 +79,7 @@ export async function updateOrderStatusFormAction(formData: FormData) {
   await assertAdmin();
   const id = String(formData.get("id"));
   const status = String(formData.get("status")) as OrderStatus;
-  updateOrderStatus(id, status);
+  await updateOrderStatus(id, status);
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${id}`);
 }
@@ -99,7 +99,7 @@ export async function createCouponFormAction(formData: FormData) {
 
   const coupon: Coupon = { code, type, value, active: true, minPurchase };
   try {
-    createCoupon(coupon);
+    await createCoupon(coupon);
   } catch {
     // código duplicado: no rompe el flujo, simplemente no crea el cupón
   }
@@ -109,13 +109,13 @@ export async function createCouponFormAction(formData: FormData) {
 export async function toggleCouponFormAction(formData: FormData) {
   await assertAdmin();
   const code = String(formData.get("code"));
-  toggleCouponActive(code);
+  await toggleCouponActive(code);
   revalidatePath("/admin/cupones");
 }
 
 export async function deleteCouponFormAction(formData: FormData) {
   await assertAdmin();
   const code = String(formData.get("code"));
-  deleteCoupon(code);
+  await deleteCoupon(code);
   revalidatePath("/admin/cupones");
 }

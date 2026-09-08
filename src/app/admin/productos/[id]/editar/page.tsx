@@ -11,7 +11,7 @@ export default async function EditarProductoPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductById(id);
   if (!product) notFound();
 
   return (

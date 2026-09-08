@@ -29,8 +29,7 @@ export default async function AdminPedidosPage({
   searchParams: Promise<{ cliente?: string }>;
 }) {
   const { cliente } = await searchParams;
-  const allOrders = getAllOrders();
-  const orders = cliente ? allOrders.filter((o) => o.userId === cliente) : allOrders;
+  const orders = await getAllOrders(cliente);
 
   return (
     <div>

@@ -9,8 +9,8 @@ import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Cupones | Admin Layer" };
 
-export default function AdminCuponesPage() {
-  const coupons = getAllCoupons();
+export default async function AdminCuponesPage() {
+  const coupons = await getAllCoupons();
 
   return (
     <div>

@@ -6,8 +6,8 @@ import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Productos | Admin Layer" };
 
-export default function AdminProductosPage() {
-  const products = getAllProductsForAdmin();
+export default async function AdminProductosPage() {
+  const products = await getAllProductsForAdmin();
   const categories = getAllCategories();
   const categoryName = (slug: string) => categories.find((c) => c.slug === slug)?.name ?? slug;
 

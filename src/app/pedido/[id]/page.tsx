@@ -15,7 +15,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
   if (!order || order.userId !== session.user.id) notFound();
 
   const whatsappMessage = `Hola! Ya hice la transferencia de mi pedido #${order.id} (total ${formatPrice(order.total)}). Te paso el comprobante.`;

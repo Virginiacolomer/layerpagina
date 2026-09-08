@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
-import type { Product } from "@/lib/data/products";
+import type { Product } from "@/lib/catalog-types";
 import { formatPrice } from "@/lib/format";
 
 export function ProductCard({ product }: { product: Product }) {

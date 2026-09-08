@@ -3,13 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProductImagePlaceholder } from "@/components/product-image-placeholder";
 import { ProductDetailActions } from "@/components/product-detail-actions";
-import { getAllCategories, getAllProducts, getProductBySlug } from "@/lib/data/products";
+import { getAllCategories, getProductBySlug } from "@/lib/data/products";
 import { WHATSAPP_NUMBERS } from "@/lib/contact";
 import { formatPrice } from "@/lib/format";
-
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ slug: p.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -17,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   return { title: product ? `${product.name} | Layer` : "Producto | Layer" };
 }
 
@@ -27,7 +23,7 @@ export default async function ProductoPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const category = getAllCategories().find((c) => c.slug === product.categorySlug);

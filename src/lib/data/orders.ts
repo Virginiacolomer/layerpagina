@@ -1,3 +1,7 @@
+import "server-only";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db";
+
 export type OrderStatus =
   | "PENDING"
   | "PAID"
@@ -35,32 +39,124 @@ export type Order = {
   createdAt: string;
 };
 
-// En memoria — temporal hasta conectar la base de datos real (ver plan del
-// proyecto). Sirve para probar el flujo de checkout y, más adelante, el
-// panel de administración de pedidos.
-const orders: Order[] = [];
-let nextId = 1;
+export type NewOrderInput = {
+  userId: string;
+  items: OrderItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  couponCode?: string;
+  shippingName: string;
+  shippingPhone: string;
+  shippingStreet: string;
+  shippingCity: string;
+  shippingProvince: string;
+  shippingPostalCode: string;
+};
 
-export function createOrder(input: Omit<Order, "id" | "createdAt">): Order {
-  const order: Order = { ...input, id: String(nextId++), createdAt: new Date().toISOString() };
-  orders.unshift(order);
-  return order;
+const orderInclude = {
+  user: true,
+  coupon: true,
+  items: { orderBy: { id: "asc" } },
+} satisfies Prisma.OrderInclude;
+
+type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
+
+function toOrder(row: OrderRow): Order {
+  return {
+    id: row.id,
+    userId: row.userId,
+    userName: row.user.name,
+    userEmail: row.user.email,
+    status: row.status,
+    items: row.items.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId ?? undefined,
+      productName: item.productName,
+      variantLabel: item.variantLabel ?? undefined,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+    })),
+    subtotal: Number(row.subtotal),
+    discount: Number(row.discount),
+    total: Number(row.total),
+    couponCode: row.coupon?.code,
+    shippingName: row.shippingName,
+    shippingPhone: row.shippingPhone,
+    shippingStreet: row.shippingStreet,
+    shippingCity: row.shippingCity,
+    shippingProvince: row.shippingProvince,
+    shippingPostalCode: row.shippingPostalCode,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
-export function getOrdersByUser(userId: string) {
-  return orders.filter((o) => o.userId === userId);
+export async function createOrder(input: NewOrderInput): Promise<Order> {
+  const coupon = input.couponCode
+    ? await prisma.coupon.findUnique({ where: { code: input.couponCode } })
+    : null;
+
+  const row = await prisma.order.create({
+    data: {
+      userId: input.userId,
+      status: "PENDING",
+      subtotal: input.subtotal,
+      discount: input.discount,
+      total: input.total,
+      couponId: coupon?.id ?? null,
+      shippingName: input.shippingName,
+      shippingPhone: input.shippingPhone,
+      shippingStreet: input.shippingStreet,
+      shippingCity: input.shippingCity,
+      shippingProvince: input.shippingProvince,
+      shippingPostalCode: input.shippingPostalCode,
+      items: {
+        create: input.items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId ?? null,
+          productName: item.productName,
+          variantLabel: item.variantLabel ?? null,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      },
+    },
+    include: orderInclude,
+  });
+  return toOrder(row);
 }
 
-export function getOrderById(id: string) {
-  return orders.find((o) => o.id === id);
+export async function getOrdersByUser(userId: string): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where: { userId },
+    include: orderInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toOrder);
 }
 
-export function getAllOrders() {
-  return orders;
+export async function getOrderById(id: string): Promise<Order | undefined> {
+  const row = await prisma.order.findUnique({ where: { id }, include: orderInclude });
+  return row ? toOrder(row) : undefined;
 }
 
-export function updateOrderStatus(id: string, status: OrderStatus) {
-  const order = orders.find((o) => o.id === id);
-  if (order) order.status = status;
-  return order;
+export async function getAllOrders(userId?: string): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where: userId ? { userId } : undefined,
+    include: orderInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toOrder);
+}
+
+export async function updateOrderStatus(
+  id: string,
+  status: OrderStatus,
+): Promise<Order | undefined> {
+  const row = await prisma.order.update({
+    where: { id },
+    data: { status },
+    include: orderInclude,
+  });
+  return toOrder(row);
 }

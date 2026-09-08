@@ -20,7 +20,7 @@ export default async function PerfilPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const orders = getOrdersByUser(session.user.id);
+  const orders = await getOrdersByUser(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-lg flex-1 px-6 py-16">

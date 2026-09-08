@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Product } from "@/lib/data/products";
+import type { Product } from "@/lib/catalog-types";
 import { whatsappLink } from "@/lib/contact";
 import { useCart } from "@/lib/cart-context";
 

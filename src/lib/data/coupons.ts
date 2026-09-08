@@ -1,3 +1,7 @@
+import "server-only";
+import type { Coupon as CouponRow } from "@prisma/client";
+import { prisma, isForeignKeyError, isNotFoundError } from "@/lib/db";
+
 export type Coupon = {
   code: string;
   type: "PERCENTAGE" | "FIXED";
@@ -6,23 +10,26 @@ export type Coupon = {
   minPurchase?: number;
 };
 
-// Cupones de ejemplo — temporal hasta conectar la base de datos real (ver
-// plan del proyecto). En la fase de panel de administración, esto se
-// reemplaza por la tabla Coupon de Prisma con altas/bajas desde el admin.
-const COUPONS: Coupon[] = [
-  { code: "BIENVENIDO10", type: "PERCENTAGE", value: 10, active: true },
-  { code: "LAYER5000", type: "FIXED", value: 5000, active: true, minPurchase: 20000 },
-];
-
 export type CouponResult =
   | { valid: true; coupon: Coupon; discount: number }
   | { valid: false; message: string };
 
-export function validateCoupon(code: string, subtotal: number): CouponResult {
-  const coupon = COUPONS.find((c) => c.code === code.trim().toUpperCase());
-  if (!coupon || !coupon.active) {
+function toCoupon(row: CouponRow): Coupon {
+  return {
+    code: row.code,
+    type: row.type,
+    value: Number(row.value),
+    active: row.active,
+    minPurchase: row.minPurchase != null ? Number(row.minPurchase) : undefined,
+  };
+}
+
+export async function validateCoupon(code: string, subtotal: number): Promise<CouponResult> {
+  const row = await prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
+  if (!row || !row.active) {
     return { valid: false, message: "El cupón no existe o ya no está activo." };
   }
+  const coupon = toCoupon(row);
   if (coupon.minPurchase && subtotal < coupon.minPurchase) {
     return {
       valid: false,
@@ -30,33 +37,57 @@ export function validateCoupon(code: string, subtotal: number): CouponResult {
     };
   }
   const discount =
-    coupon.type === "PERCENTAGE" ? Math.round((subtotal * coupon.value) / 100) : coupon.value;
+    coupon.type === "PERCENTAGE"
+      ? Math.round((subtotal * coupon.value) / 100)
+      : coupon.value;
   return { valid: true, coupon, discount: Math.min(discount, subtotal) };
 }
 
 // --- Admin ---
 
-export function getAllCoupons() {
-  return COUPONS;
+export async function getAllCoupons(): Promise<Coupon[]> {
+  const rows = await prisma.coupon.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map(toCoupon);
 }
 
-export function createCoupon(input: Coupon): Coupon {
-  if (COUPONS.some((c) => c.code === input.code)) {
+export async function createCoupon(input: Coupon): Promise<Coupon> {
+  if (await prisma.coupon.findUnique({ where: { code: input.code } })) {
     throw new Error("Ya existe un cupón con ese código.");
   }
-  COUPONS.push(input);
-  return input;
+  const row = await prisma.coupon.create({
+    data: {
+      code: input.code,
+      type: input.type,
+      value: input.value,
+      active: input.active,
+      minPurchase: input.minPurchase ?? null,
+    },
+  });
+  return toCoupon(row);
 }
 
-export function toggleCouponActive(code: string) {
-  const coupon = COUPONS.find((c) => c.code === code);
-  if (coupon) coupon.active = !coupon.active;
-  return coupon;
+export async function toggleCouponActive(code: string): Promise<Coupon | undefined> {
+  const current = await prisma.coupon.findUnique({ where: { code } });
+  if (!current) return undefined;
+  const row = await prisma.coupon.update({
+    where: { code },
+    data: { active: !current.active },
+  });
+  return toCoupon(row);
 }
 
-export function deleteCoupon(code: string): boolean {
-  const index = COUPONS.findIndex((c) => c.code === code);
-  if (index === -1) return false;
-  COUPONS.splice(index, 1);
-  return true;
+export async function deleteCoupon(code: string): Promise<boolean> {
+  try {
+    await prisma.coupon.delete({ where: { code } });
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    if (isForeignKeyError(error)) {
+      // Cupón ya usado en pedidos: lo desactivamos en vez de borrarlo para no
+      // romper el historial.
+      await prisma.coupon.update({ where: { code }, data: { active: false } });
+      return true;
+    }
+    throw error;
+  }
 }

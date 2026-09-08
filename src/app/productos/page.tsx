@@ -14,7 +14,9 @@ export default async function ProductosPage({
 }) {
   const { categoria } = await searchParams;
   const categories = getAllCategories();
-  const products = categoria ? getProductsByCategory(categoria) : getAllProducts();
+  const products = categoria
+    ? await getProductsByCategory(categoria)
+    : await getAllProducts();
   const activeCategory = categories.find((c) => c.slug === categoria);
 
   return (

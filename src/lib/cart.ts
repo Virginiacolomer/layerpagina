@@ -1,22 +1,15 @@
-import { getProductById, type Product } from "@/lib/data/products";
+import "server-only";
+import { getProductsByIds } from "@/lib/data/products";
+import type { CartLine, ResolvedCartLine } from "@/lib/catalog-types";
 
-export type CartLine = {
-  productId: string;
-  variantId?: string;
-  quantity: number;
-};
+export type { CartLine, ResolvedCartLine } from "@/lib/catalog-types";
 
-export type ResolvedCartLine = {
-  product: Product;
-  variant?: Product["variants"][number];
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-};
+export async function resolveCartLines(lines: CartLine[]): Promise<ResolvedCartLine[]> {
+  if (lines.length === 0) return [];
+  const products = await getProductsByIds([...new Set(lines.map((l) => l.productId))]);
 
-export function resolveCartLines(lines: CartLine[]): ResolvedCartLine[] {
   return lines.flatMap((line) => {
-    const product = getProductById(line.productId);
+    const product = products.get(line.productId);
     if (!product) return [];
     const variant = line.variantId
       ? product.variants.find((v) => v.id === line.variantId)
@@ -34,6 +27,7 @@ export function resolveCartLines(lines: CartLine[]): ResolvedCartLine[] {
   });
 }
 
-export function cartSubtotal(lines: CartLine[]) {
-  return resolveCartLines(lines).reduce((sum, l) => sum + l.lineTotal, 0);
+export async function cartSubtotal(lines: CartLine[]): Promise<number> {
+  const resolved = await resolveCartLines(lines);
+  return resolved.reduce((sum, l) => sum + l.lineTotal, 0);
 }

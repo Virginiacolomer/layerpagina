@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Product } from "@/lib/data/products";
+import type { Product } from "@/lib/catalog-types";
 import { CATEGORIES, slugify } from "@/lib/categories";
 import { createProductAction, updateProductAction } from "@/lib/actions/admin-actions";
 

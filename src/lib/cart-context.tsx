@@ -9,13 +9,15 @@ import {
   useTransition,
   type ReactNode,
 } from "react";
-import { cartSubtotal, type CartLine } from "@/lib/cart";
-import { checkCouponAction } from "@/lib/actions/cart-actions";
+import type { CartLine, ResolvedCartLine } from "@/lib/catalog-types";
+import { checkCouponAction, resolveCartAction } from "@/lib/actions/cart-actions";
 
 type CartContextValue = {
   lines: CartLine[];
+  resolvedLines: ResolvedCartLine[];
   count: number;
   subtotal: number;
+  pricesLoaded: boolean;
   couponCode: string | null;
   discount: number;
   couponError: string | null;
@@ -71,7 +73,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(COUPON_KEY, JSON.stringify(couponCode));
   }, [couponCode, hydrated]);
 
-  const subtotal = useMemo(() => cartSubtotal(lines), [lines]);
+  // El carrito guarda sólo ids + cantidades; los precios y datos de producto se
+  // piden al servidor cada vez que cambian las líneas (ver resolveCartAction).
+  // Guardamos el resultado junto con la "firma" de las líneas que lo generaron:
+  // mientras no coincida con las líneas actuales, sabemos que está en vuelo y
+  // los valores derivados vuelven a cero sin necesidad de un setState síncrono.
+  const linesKey = useMemo(() => JSON.stringify(lines), [lines]);
+  const [resolved, setResolved] = useState<{
+    key: string;
+    lines: ResolvedCartLine[];
+    subtotal: number;
+  }>({ key: "[]", lines: [], subtotal: 0 });
+
+  useEffect(() => {
+    if (!hydrated || lines.length === 0) return;
+    let cancelled = false;
+    resolveCartAction(lines).then((result) => {
+      if (cancelled) return;
+      setResolved({ key: linesKey, lines: result.lines, subtotal: result.subtotal });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // linesKey resume el contenido de `lines`; no hace falta depender de ambos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey, hydrated]);
+
+  const upToDate = resolved.key === linesKey;
+  const resolvedLines = lines.length === 0 ? [] : upToDate ? resolved.lines : [];
+  const subtotal = lines.length === 0 ? 0 : upToDate ? resolved.subtotal : 0;
+  const pricesLoaded = lines.length === 0 || upToDate;
 
   // Re-valida el cupón aplicado cada vez que cambia el subtotal (por ejemplo
   // si el cliente modifica cantidades), para no dejar un descuento aplicado
@@ -157,8 +188,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         lines,
+        resolvedLines,
         count,
         subtotal,
+        pricesLoaded,
         couponCode,
         discount,
         couponError,

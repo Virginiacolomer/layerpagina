@@ -1,4 +1,6 @@
+import "server-only";
 import bcrypt from "bcryptjs";
+import { prisma, isUniqueConstraintError } from "@/lib/db";
 
 export type Role = "CUSTOMER" | "ADMIN";
 
@@ -10,37 +12,45 @@ export type PublicUser = {
   role: Role;
 };
 
-type StoredUser = PublicUser & { passwordHash: string };
+export type CustomerWithStats = PublicUser & {
+  orderCount: number;
+  totalSpent: number;
+  lastPhone?: string;
+};
 
-// In-memory store — temporary until a database is connected (see project
-// plan). Resets whenever the dev server restarts; only meant to exercise the
-// register/login/profile/admin flow locally before swapping this for Prisma.
-const users: StoredUser[] = [];
-let nextId = 1;
+function toPublicUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: Role;
+}): PublicUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone ?? undefined,
+    role: user.role,
+  };
+}
+
+// El admin del panel nunca se crea desde el registro público: se siembra una
+// sola vez desde ADMIN_EMAIL/ADMIN_PASSWORD (env). El upsert es idempotente y
+// además actualiza la contraseña si se cambió en el .env.
 let adminSeeded = false;
 
-// El registro público siempre crea CUSTOMER — el admin se siembra una sola
-// vez desde ADMIN_EMAIL/ADMIN_PASSWORD (env), nunca queda expuesto como algo
-// que un usuario pueda auto-asignarse.
 async function ensureAdminSeeded() {
   if (adminSeeded) return;
   adminSeeded = true;
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
-  if (users.some((u) => u.email === email)) return;
   const passwordHash = await bcrypt.hash(password, 10);
-  users.push({
-    id: String(nextId++),
-    name: "Admin Layer",
-    email,
-    passwordHash,
-    role: "ADMIN",
+  await prisma.user.upsert({
+    where: { email },
+    update: { passwordHash, role: "ADMIN" },
+    create: { email, passwordHash, role: "ADMIN", name: "Admin Layer" },
   });
-}
-
-function toPublicUser(user: StoredUser): PublicUser {
-  return { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role };
 }
 
 export async function createUser(input: {
@@ -51,20 +61,18 @@ export async function createUser(input: {
 }): Promise<PublicUser> {
   await ensureAdminSeeded();
   const email = input.email.trim().toLowerCase();
-  if (users.some((u) => u.email === email)) {
-    throw new Error("Ya existe una cuenta con ese email.");
-  }
   const passwordHash = await bcrypt.hash(input.password, 10);
-  const user: StoredUser = {
-    id: String(nextId++),
-    name: input.name.trim(),
-    email,
-    phone: input.phone,
-    passwordHash,
-    role: "CUSTOMER",
-  };
-  users.push(user);
-  return toPublicUser(user);
+  try {
+    const user = await prisma.user.create({
+      data: { name: input.name, email, phone: input.phone, passwordHash, role: "CUSTOMER" },
+    });
+    return toPublicUser(user);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("Ya existe una cuenta con ese email.");
+    }
+    throw error;
+  }
 }
 
 export async function verifyUserCredentials(
@@ -72,13 +80,33 @@ export async function verifyUserCredentials(
   password: string,
 ): Promise<PublicUser | null> {
   await ensureAdminSeeded();
-  const user = users.find((u) => u.email === email.trim().toLowerCase());
-  if (!user) return null;
+  const user = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+  });
+  if (!user || !user.passwordHash) return null;
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return null;
   return toPublicUser(user);
 }
 
-export function getAllCustomers(): PublicUser[] {
-  return users.filter((u) => u.role === "CUSTOMER").map(toPublicUser);
+export async function getAllCustomers(): Promise<PublicUser[]> {
+  const users = await prisma.user.findMany({
+    where: { role: "CUSTOMER" },
+    orderBy: { createdAt: "desc" },
+  });
+  return users.map(toPublicUser);
+}
+
+export async function getCustomersWithOrderStats(): Promise<CustomerWithStats[]> {
+  const users = await prisma.user.findMany({
+    where: { role: "CUSTOMER" },
+    orderBy: { createdAt: "desc" },
+    include: { orders: { orderBy: { createdAt: "desc" } } },
+  });
+  return users.map((user) => ({
+    ...toPublicUser(user),
+    orderCount: user.orders.length,
+    totalSpent: user.orders.reduce((sum, order) => sum + Number(order.total), 0),
+    lastPhone: user.orders[0]?.shippingPhone,
+  }));
 }

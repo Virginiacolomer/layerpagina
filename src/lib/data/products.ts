@@ -1,212 +1,200 @@
+import "server-only";
+import { Prisma } from "@prisma/client";
+import { prisma, isForeignKeyError, isNotFoundError } from "@/lib/db";
 import { CATEGORIES } from "@/lib/categories";
+import type { Product, ProductVariant } from "@/lib/catalog-types";
 
-export type ProductVariant = {
-  id: string;
-  name: string;
-  value: string;
-  priceModifier: number;
-  stock: number;
-};
+export type { Product, ProductVariant } from "@/lib/catalog-types";
 
-export type Product = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  active: boolean;
-  categorySlug: string;
-  variants: ProductVariant[];
-};
+const productInclude = {
+  variants: { orderBy: { id: "asc" } },
+  category: true,
+} satisfies Prisma.ProductInclude;
 
-// Catálogo de ejemplo hasta que haya una base de datos conectada (ver fase de
-// datos del proyecto). La forma de estos datos y de las funciones de abajo
-// imita lo que devolvería Prisma, para que las páginas no cambien al conectar
-// la base real.
-const PRODUCTS: Product[] = [
-  {
-    id: "p1",
-    slug: "busto-iron-man",
-    name: "Busto Iron Man",
-    description:
-      "Busto articulado de Iron Man impreso en resina y pintado a mano, con detalles de luces LED en el arc reactor. Pieza de colección.",
-    price: 42000,
-    stock: 3,
-    active: true,
-    categorySlug: "personajes",
-    variants: [],
-  },
-  {
-    id: "p2",
-    slug: "diorama-rick-y-morty",
-    name: "Diorama Rick y Morty",
-    description:
-      "Diorama de Rick y Morty sobre base rocosa con tentáculos, pintado a mano con acabado mate. Incluye base con nombre personalizable.",
-    price: 38000,
-    stock: 2,
-    active: true,
-    categorySlug: "dioramas",
-    variants: [
-      { id: "p2-v1", name: "Base", value: "Con nombre grabado", priceModifier: 2000, stock: 2 },
-      { id: "p2-v2", name: "Base", value: "Sin grabado", priceModifier: 0, stock: 4 },
-    ],
-  },
-  {
-    id: "p3",
-    slug: "funko-personalizado",
-    name: "Funko Pop personalizado",
-    description:
-      "Tu Funko Pop a medida, hecho a partir de una foto tuya o de la persona que quieras regalar. Elegí el color de piel y outfit.",
-    price: 15000,
-    stock: 10,
-    active: true,
-    categorySlug: "funko-pop-personalizados",
-    variants: [
-      { id: "p3-v1", name: "Tamaño", value: "Estándar (10cm)", priceModifier: 0, stock: 10 },
-      { id: "p3-v2", name: "Tamaño", value: "Grande (15cm)", priceModifier: 6000, stock: 5 },
-    ],
-  },
-  {
-    id: "p4",
-    slug: "llavero-logo-personalizado",
-    name: "Llavero con logo personalizado",
-    description:
-      "Llavero impreso en PLA resistente con el logo, iniciales o texto que quieras. Ideal para regalos de eventos o merchandising.",
-    price: 3500,
-    stock: 50,
-    active: true,
-    categorySlug: "llaveros",
-    variants: [
-      { id: "p4-v1", name: "Color", value: "Naranja", priceModifier: 0, stock: 20 },
-      { id: "p4-v2", name: "Color", value: "Negro", priceModifier: 0, stock: 20 },
-      { id: "p4-v3", name: "Color", value: "Blanco", priceModifier: 0, stock: 10 },
-    ],
-  },
-  {
-    id: "p5",
-    slug: "maceta-geometrica",
-    name: "Maceta geométrica",
-    description:
-      "Maceta decorativa de diseño geométrico para plantas chicas, con plato incluido. Ideal para escritorio o repisa.",
-    price: 9500,
-    stock: 15,
-    active: true,
-    categorySlug: "hogar-y-decoracion",
-    variants: [
-      { id: "p5-v1", name: "Color", value: "Blanco", priceModifier: 0, stock: 8 },
-      { id: "p5-v2", name: "Color", value: "Gris", priceModifier: 0, stock: 7 },
-    ],
-  },
-  {
-    id: "p6",
-    slug: "organizador-escritorio-modular",
-    name: "Organizador de escritorio modular",
-    description:
-      "Set modular para organizar lápices, clips y accesorios de escritorio. Módulos apilables para armar tu propia configuración.",
-    price: 12000,
-    stock: 8,
-    active: true,
-    categorySlug: "organizadores-de-escritorio",
-    variants: [],
-  },
-  {
-    id: "p7",
-    slug: "souvenirs-cumple-x10",
-    name: "Souvenirs para eventos (pack x10)",
-    description:
-      "Pack de 10 souvenirs personalizados con el motivo, color y texto que elijas. Perfecto para cumpleaños o eventos temáticos.",
-    price: 18000,
-    stock: 6,
-    active: true,
-    categorySlug: "productos-para-eventos",
-    variants: [],
-  },
-  {
-    id: "p8",
-    slug: "juguete-dispensador-mascotas",
-    name: "Juguete dispensador para mascotas",
-    description:
-      "Juguete interactivo que dispensa premios mientras tu mascota juega. Resistente a mordidas, en PLA+ apto para uso con mascotas.",
-    price: 11000,
-    stock: 12,
-    active: true,
-    categorySlug: "juguetes-para-mascotas",
-    variants: [],
-  },
-  {
-    id: "p9",
-    slug: "comedero-doble-antideslizante",
-    name: "Comedero doble antideslizante",
-    description:
-      "Comedero doble para agua y comida, con base antideslizante. Fácil de limpiar y disponible en distintos tamaños según tu mascota.",
-    price: 13500,
-    stock: 9,
-    active: true,
-    categorySlug: "comederos-para-mascotas",
-    variants: [
-      { id: "p9-v1", name: "Tamaño", value: "Chico", priceModifier: 0, stock: 5 },
-      { id: "p9-v2", name: "Tamaño", value: "Grande", priceModifier: 2500, stock: 4 },
-    ],
-  },
-];
+type ProductRow = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 
+function toProduct(row: ProductRow): Product {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    price: Number(row.price),
+    stock: row.stock,
+    active: row.active,
+    categorySlug: row.category.slug,
+    variants: row.variants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      value: v.value,
+      priceModifier: Number(v.priceModifier),
+      stock: v.stock,
+    })),
+  };
+}
+
+// Categorías: la lista fija de src/lib/categories.ts sigue siendo la fuente de
+// verdad (el seed crea exactamente estas). Si más adelante el admin necesita
+// crear categorías, esto pasa a leer de la tabla Category.
 export function getAllCategories() {
   return CATEGORIES;
 }
 
-export function getAllProducts() {
-  return PRODUCTS.filter((p) => p.active);
+export async function getAllProducts(): Promise<Product[]> {
+  const rows = await prisma.product.findMany({
+    where: { active: true },
+    include: productInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toProduct);
 }
 
-export function getProductsByCategory(categorySlug: string) {
-  return PRODUCTS.filter((p) => p.active && p.categorySlug === categorySlug);
+export async function getProductsByCategory(categorySlug: string): Promise<Product[]> {
+  const rows = await prisma.product.findMany({
+    where: { active: true, category: { slug: categorySlug } },
+    include: productInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toProduct);
 }
 
-export function getProductBySlug(slug: string) {
-  return PRODUCTS.find((p) => p.active && p.slug === slug);
+export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+  const row = await prisma.product.findFirst({
+    where: { slug, active: true },
+    include: productInclude,
+  });
+  return row ? toProduct(row) : undefined;
 }
 
-export function getProductById(id: string) {
-  return PRODUCTS.find((p) => p.id === id);
+export async function getProductById(id: string): Promise<Product | undefined> {
+  const row = await prisma.product.findUnique({ where: { id }, include: productInclude });
+  return row ? toProduct(row) : undefined;
+}
+
+// Para resolver líneas del carrito: trae varios por id de una, sin filtrar por
+// `active` (si un producto se ocultó con algo ya en el carrito, igual se puede
+// terminar la compra).
+export async function getProductsByIds(ids: string[]): Promise<Map<string, Product>> {
+  if (ids.length === 0) return new Map();
+  const rows = await prisma.product.findMany({
+    where: { id: { in: ids } },
+    include: productInclude,
+  });
+  return new Map(rows.map((row) => [row.id, toProduct(row)]));
 }
 
 // --- Admin: incluye productos inactivos y permite escribir. ---
 
-export function getAllProductsForAdmin() {
-  return PRODUCTS;
+export async function getAllProductsForAdmin(): Promise<Product[]> {
+  const rows = await prisma.product.findMany({
+    include: productInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toProduct);
 }
 
-let nextProductId = PRODUCTS.length + 1;
+type ProductInput = Omit<Product, "id">;
 
-export function createProduct(input: Omit<Product, "id">): Product {
-  if (PRODUCTS.some((p) => p.slug === input.slug)) {
+async function categoryIdForSlug(slug: string): Promise<string> {
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) throw new Error("La categoría seleccionada no existe.");
+  return category.id;
+}
+
+function variantCreateData(variants: ProductVariant[]) {
+  return variants.map((v) => ({
+    name: v.name,
+    value: v.value,
+    priceModifier: v.priceModifier,
+    stock: v.stock,
+  }));
+}
+
+export async function createProduct(input: ProductInput): Promise<Product> {
+  if (await prisma.product.findUnique({ where: { slug: input.slug } })) {
     throw new Error("Ya existe un producto con ese slug.");
   }
-  const product: Product = { id: `p${nextProductId++}`, ...input };
-  PRODUCTS.push(product);
-  return product;
+  const categoryId = await categoryIdForSlug(input.categorySlug);
+  const row = await prisma.product.create({
+    data: {
+      slug: input.slug,
+      name: input.name,
+      description: input.description,
+      price: input.price,
+      stock: input.stock,
+      active: input.active,
+      categoryId,
+      variants: { create: variantCreateData(input.variants) },
+    },
+    include: productInclude,
+  });
+  return toProduct(row);
 }
 
-export function updateProduct(id: string, input: Omit<Product, "id">): Product | undefined {
-  const index = PRODUCTS.findIndex((p) => p.id === id);
-  if (index === -1) return undefined;
-  if (PRODUCTS.some((p) => p.id !== id && p.slug === input.slug)) {
+export async function updateProduct(
+  id: string,
+  input: ProductInput,
+): Promise<Product | undefined> {
+  if (!(await prisma.product.findUnique({ where: { id } }))) return undefined;
+  const slugOwner = await prisma.product.findUnique({ where: { slug: input.slug } });
+  if (slugOwner && slugOwner.id !== id) {
     throw new Error("Ya existe otro producto con ese slug.");
   }
-  PRODUCTS[index] = { id, ...input };
-  return PRODUCTS[index];
+  const categoryId = await categoryIdForSlug(input.categorySlug);
+
+  try {
+    const row = await prisma.$transaction(async (tx) => {
+      await tx.productVariant.deleteMany({ where: { productId: id } });
+      return tx.product.update({
+        where: { id },
+        data: {
+          slug: input.slug,
+          name: input.name,
+          description: input.description,
+          price: input.price,
+          stock: input.stock,
+          active: input.active,
+          categoryId,
+          variants: { create: variantCreateData(input.variants) },
+        },
+        include: productInclude,
+      });
+    });
+    return toProduct(row);
+  } catch (error) {
+    if (isForeignKeyError(error)) {
+      throw new Error(
+        "Este producto tiene variantes ya usadas en pedidos, no se pueden reestructurar. " +
+          "Editá el resto de los datos sin tocar las variantes, o creá un producto nuevo.",
+      );
+    }
+    throw error;
+  }
 }
 
-export function deleteProduct(id: string): boolean {
-  const index = PRODUCTS.findIndex((p) => p.id === id);
-  if (index === -1) return false;
-  PRODUCTS.splice(index, 1);
-  return true;
+export async function deleteProduct(id: string): Promise<boolean> {
+  try {
+    await prisma.product.delete({ where: { id } });
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    if (isForeignKeyError(error)) {
+      // Tiene pedidos asociados: borrarlo rompería el historial, así que lo
+      // ocultamos del catálogo en lugar de eliminarlo.
+      await prisma.product.update({ where: { id }, data: { active: false } });
+      return true;
+    }
+    throw error;
+  }
 }
 
-export function toggleProductActive(id: string) {
-  const product = PRODUCTS.find((p) => p.id === id);
-  if (product) product.active = !product.active;
-  return product;
+export async function toggleProductActive(id: string): Promise<Product | undefined> {
+  const current = await prisma.product.findUnique({ where: { id } });
+  if (!current) return undefined;
+  const row = await prisma.product.update({
+    where: { id },
+    data: { active: !current.active },
+    include: productInclude,
+  });
+  return toProduct(row);
 }

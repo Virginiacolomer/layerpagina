@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { resolveCartLines } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { placeOrderAction } from "@/lib/actions/checkout-actions";
 
@@ -22,10 +21,10 @@ export function CheckoutForm({ defaultName }: { defaultName: string }) {
     postalCode: "",
   });
 
-  const resolvedLines = resolveCartLines(cart.lines);
+  const resolvedLines = cart.resolvedLines;
   const total = cart.subtotal - cart.discount;
 
-  if (resolvedLines.length === 0) {
+  if (cart.lines.length === 0) {
     return (
       <div className="mt-6 flex flex-col items-start gap-3">
         <p className="text-neutral-600">Tu carrito está vacío.</p>
@@ -34,6 +33,10 @@ export function CheckoutForm({ defaultName }: { defaultName: string }) {
         </Link>
       </div>
     );
+  }
+
+  if (!cart.pricesLoaded) {
+    return <p className="mt-6 text-neutral-500">Cargando…</p>;
   }
 
   function handleSubmit(e: React.FormEvent) {

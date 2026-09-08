@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getAllCustomers } from "@/lib/data/users";
-import { getOrdersByUser } from "@/lib/data/orders";
+import { getCustomersWithOrderStats } from "@/lib/data/users";
 import { whatsappLink } from "@/lib/contact";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Clientes | Admin Layer" };
 
-export default function AdminClientesPage() {
-  const customers = getAllCustomers();
+export default async function AdminClientesPage() {
+  const customers = await getCustomersWithOrderStats();
 
   return (
     <div>
@@ -29,38 +28,33 @@ export default function AdminClientesPage() {
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => {
-                const orders = getOrdersByUser(customer.id);
-                const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
-                const lastPhone = orders[0]?.shippingPhone;
-                return (
-                  <tr key={customer.id} className="border-t border-brand-gray-200">
-                    <td className="px-4 py-3 font-medium text-neutral-900">{customer.name}</td>
-                    <td className="px-4 py-3 text-neutral-600">{customer.email}</td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/pedidos?cliente=${customer.id}`}
-                        className="text-brand hover:underline"
+              {customers.map((customer) => (
+                <tr key={customer.id} className="border-t border-brand-gray-200">
+                  <td className="px-4 py-3 font-medium text-neutral-900">{customer.name}</td>
+                  <td className="px-4 py-3 text-neutral-600">{customer.email}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/admin/pedidos?cliente=${customer.id}`}
+                      className="text-brand hover:underline"
+                    >
+                      {customer.orderCount}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">{formatPrice(customer.totalSpent)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {customer.lastPhone && (
+                      <a
+                        href={whatsappLink(customer.lastPhone.replace(/\D/g, ""))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-brand hover:underline"
                       >
-                        {orders.length}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{formatPrice(totalSpent)}</td>
-                    <td className="px-4 py-3 text-right">
-                      {lastPhone && (
-                        <a
-                          href={whatsappLink(lastPhone.replace(/\D/g, ""))}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-brand hover:underline"
-                        >
-                          WhatsApp
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                        WhatsApp
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

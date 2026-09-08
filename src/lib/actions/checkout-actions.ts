@@ -1,7 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { resolveCartLines, type CartLine } from "@/lib/cart";
+import { resolveCartLines } from "@/lib/cart";
+import type { CartLine } from "@/lib/catalog-types";
 import { createOrder } from "@/lib/data/orders";
 import { validateCoupon } from "@/lib/data/coupons";
 import { sendNewOrderEmail } from "@/lib/email";
@@ -25,7 +26,7 @@ export async function placeOrderAction(
   const session = await auth();
   if (!session?.user) return { error: "Tenés que iniciar sesión para continuar." };
 
-  const resolved = resolveCartLines(lines);
+  const resolved = await resolveCartLines(lines);
   if (resolved.length === 0) return { error: "Tu carrito está vacío." };
 
   if (
@@ -42,15 +43,12 @@ export async function placeOrderAction(
   const subtotal = resolved.reduce((sum, l) => sum + l.lineTotal, 0);
   let discount = 0;
   if (couponCode) {
-    const result = validateCoupon(couponCode, subtotal);
+    const result = await validateCoupon(couponCode, subtotal);
     if (result.valid) discount = result.discount;
   }
 
-  const order = createOrder({
+  const order = await createOrder({
     userId: session.user.id,
-    userName: session.user.name ?? shipping.name,
-    userEmail: session.user.email ?? "",
-    status: "PENDING",
     items: resolved.map((l) => ({
       productId: l.product.id,
       variantId: l.variant?.id,
