@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { resolveCartLines, type CartLine } from "@/lib/cart";
 import { createOrder } from "@/lib/data/orders";
 import { validateCoupon } from "@/lib/data/coupons";
+import { sendNewOrderEmail } from "@/lib/email";
 
 export type ShippingInfo = {
   name: string;
@@ -69,6 +70,8 @@ export async function placeOrderAction(
     shippingProvince: shipping.province,
     shippingPostalCode: shipping.postalCode,
   });
+
+  await sendNewOrderEmail(order);
 
   return { orderId: order.id };
 }
