@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { CartIcon } from "@/components/cart-icon";
+import { LayerMark } from "@/components/layer-logo";
 import { INSTAGRAM_URL, WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 
 export async function SiteHeader() {
@@ -9,7 +10,8 @@ export async function SiteHeader() {
   return (
     <header className="border-b border-brand-gray-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-        <Link href="/" className="text-2xl font-extrabold text-brand">
+        <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold text-brand">
+          <LayerMark className="h-8 w-8" />
           Layer
         </Link>
 
@@ -20,6 +22,11 @@ export async function SiteHeader() {
           <Link href={session?.user ? "/perfil" : "/login"} className="hover:text-brand">
             {session?.user ? "Mi cuenta" : "Ingresar"}
           </Link>
+          {session?.user?.role === "ADMIN" && (
+            <Link href="/admin/pedidos" className="hover:text-brand">
+              Admin
+            </Link>
+          )}
           <CartIcon />
         </nav>
 

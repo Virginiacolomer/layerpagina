@@ -33,3 +33,30 @@ export function validateCoupon(code: string, subtotal: number): CouponResult {
     coupon.type === "PERCENTAGE" ? Math.round((subtotal * coupon.value) / 100) : coupon.value;
   return { valid: true, coupon, discount: Math.min(discount, subtotal) };
 }
+
+// --- Admin ---
+
+export function getAllCoupons() {
+  return COUPONS;
+}
+
+export function createCoupon(input: Coupon): Coupon {
+  if (COUPONS.some((c) => c.code === input.code)) {
+    throw new Error("Ya existe un cupón con ese código.");
+  }
+  COUPONS.push(input);
+  return input;
+}
+
+export function toggleCouponActive(code: string) {
+  const coupon = COUPONS.find((c) => c.code === code);
+  if (coupon) coupon.active = !coupon.active;
+  return coupon;
+}
+
+export function deleteCoupon(code: string): boolean {
+  const index = COUPONS.findIndex((c) => c.code === code);
+  if (index === -1) return false;
+  COUPONS.splice(index, 1);
+  return true;
+}

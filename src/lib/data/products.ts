@@ -15,6 +15,7 @@ export type Product = {
   description: string;
   price: number;
   stock: number;
+  active: boolean;
   categorySlug: string;
   variants: ProductVariant[];
 };
@@ -32,6 +33,7 @@ const PRODUCTS: Product[] = [
       "Busto articulado de Iron Man impreso en resina y pintado a mano, con detalles de luces LED en el arc reactor. Pieza de colección.",
     price: 42000,
     stock: 3,
+    active: true,
     categorySlug: "personajes",
     variants: [],
   },
@@ -43,6 +45,7 @@ const PRODUCTS: Product[] = [
       "Diorama de Rick y Morty sobre base rocosa con tentáculos, pintado a mano con acabado mate. Incluye base con nombre personalizable.",
     price: 38000,
     stock: 2,
+    active: true,
     categorySlug: "dioramas",
     variants: [
       { id: "p2-v1", name: "Base", value: "Con nombre grabado", priceModifier: 2000, stock: 2 },
@@ -57,6 +60,7 @@ const PRODUCTS: Product[] = [
       "Tu Funko Pop a medida, hecho a partir de una foto tuya o de la persona que quieras regalar. Elegí el color de piel y outfit.",
     price: 15000,
     stock: 10,
+    active: true,
     categorySlug: "funko-pop-personalizados",
     variants: [
       { id: "p3-v1", name: "Tamaño", value: "Estándar (10cm)", priceModifier: 0, stock: 10 },
@@ -71,6 +75,7 @@ const PRODUCTS: Product[] = [
       "Llavero impreso en PLA resistente con el logo, iniciales o texto que quieras. Ideal para regalos de eventos o merchandising.",
     price: 3500,
     stock: 50,
+    active: true,
     categorySlug: "llaveros",
     variants: [
       { id: "p4-v1", name: "Color", value: "Naranja", priceModifier: 0, stock: 20 },
@@ -86,6 +91,7 @@ const PRODUCTS: Product[] = [
       "Maceta decorativa de diseño geométrico para plantas chicas, con plato incluido. Ideal para escritorio o repisa.",
     price: 9500,
     stock: 15,
+    active: true,
     categorySlug: "hogar-y-decoracion",
     variants: [
       { id: "p5-v1", name: "Color", value: "Blanco", priceModifier: 0, stock: 8 },
@@ -100,6 +106,7 @@ const PRODUCTS: Product[] = [
       "Set modular para organizar lápices, clips y accesorios de escritorio. Módulos apilables para armar tu propia configuración.",
     price: 12000,
     stock: 8,
+    active: true,
     categorySlug: "organizadores-de-escritorio",
     variants: [],
   },
@@ -111,6 +118,7 @@ const PRODUCTS: Product[] = [
       "Pack de 10 souvenirs personalizados con el motivo, color y texto que elijas. Perfecto para cumpleaños o eventos temáticos.",
     price: 18000,
     stock: 6,
+    active: true,
     categorySlug: "productos-para-eventos",
     variants: [],
   },
@@ -122,6 +130,7 @@ const PRODUCTS: Product[] = [
       "Juguete interactivo que dispensa premios mientras tu mascota juega. Resistente a mordidas, en PLA+ apto para uso con mascotas.",
     price: 11000,
     stock: 12,
+    active: true,
     categorySlug: "juguetes-para-mascotas",
     variants: [],
   },
@@ -133,6 +142,7 @@ const PRODUCTS: Product[] = [
       "Comedero doble para agua y comida, con base antideslizante. Fácil de limpiar y disponible en distintos tamaños según tu mascota.",
     price: 13500,
     stock: 9,
+    active: true,
     categorySlug: "comederos-para-mascotas",
     variants: [
       { id: "p9-v1", name: "Tamaño", value: "Chico", priceModifier: 0, stock: 5 },
@@ -146,17 +156,57 @@ export function getAllCategories() {
 }
 
 export function getAllProducts() {
-  return PRODUCTS;
+  return PRODUCTS.filter((p) => p.active);
 }
 
 export function getProductsByCategory(categorySlug: string) {
-  return PRODUCTS.filter((p) => p.categorySlug === categorySlug);
+  return PRODUCTS.filter((p) => p.active && p.categorySlug === categorySlug);
 }
 
 export function getProductBySlug(slug: string) {
-  return PRODUCTS.find((p) => p.slug === slug);
+  return PRODUCTS.find((p) => p.active && p.slug === slug);
 }
 
 export function getProductById(id: string) {
   return PRODUCTS.find((p) => p.id === id);
+}
+
+// --- Admin: incluye productos inactivos y permite escribir. ---
+
+export function getAllProductsForAdmin() {
+  return PRODUCTS;
+}
+
+let nextProductId = PRODUCTS.length + 1;
+
+export function createProduct(input: Omit<Product, "id">): Product {
+  if (PRODUCTS.some((p) => p.slug === input.slug)) {
+    throw new Error("Ya existe un producto con ese slug.");
+  }
+  const product: Product = { id: `p${nextProductId++}`, ...input };
+  PRODUCTS.push(product);
+  return product;
+}
+
+export function updateProduct(id: string, input: Omit<Product, "id">): Product | undefined {
+  const index = PRODUCTS.findIndex((p) => p.id === id);
+  if (index === -1) return undefined;
+  if (PRODUCTS.some((p) => p.id !== id && p.slug === input.slug)) {
+    throw new Error("Ya existe otro producto con ese slug.");
+  }
+  PRODUCTS[index] = { id, ...input };
+  return PRODUCTS[index];
+}
+
+export function deleteProduct(id: string): boolean {
+  const index = PRODUCTS.findIndex((p) => p.id === id);
+  if (index === -1) return false;
+  PRODUCTS.splice(index, 1);
+  return true;
+}
+
+export function toggleProductActive(id: string) {
+  const product = PRODUCTS.find((p) => p.id === id);
+  if (product) product.active = !product.active;
+  return product;
 }
