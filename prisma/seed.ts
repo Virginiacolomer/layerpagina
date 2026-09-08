@@ -47,7 +47,7 @@ const PRODUCTS: SeedProduct[] = [
       "Tu Funko Pop a medida, hecho a partir de una foto tuya o de la persona que quieras regalar. Elegí el color de piel y outfit.",
     price: 15000,
     stock: 10,
-    categorySlug: "funko-pop-personalizados",
+    categorySlug: "personalizados",
     variants: [
       { name: "Tamaño", value: "Estándar (10cm)", priceModifier: 0, stock: 10 },
       { name: "Tamaño", value: "Grande (15cm)", priceModifier: 6000, stock: 5 },

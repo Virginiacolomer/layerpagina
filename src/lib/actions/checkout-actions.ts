@@ -29,6 +29,13 @@ export async function placeOrderAction(
   const resolved = await resolveCartLines(lines);
   if (resolved.length === 0) return { error: "Tu carrito está vacío." };
 
+  if (resolved.some((l) => l.product.consultOnly)) {
+    return {
+      error:
+        "Hay productos personalizados en tu carrito. Esos se coordinan por WhatsApp, no se compran online — quitalos para continuar.",
+    };
+  }
+
   if (
     !shipping.name.trim() ||
     !shipping.phone.trim() ||

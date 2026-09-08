@@ -1,7 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma, isForeignKeyError, isNotFoundError } from "@/lib/db";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, CONSULT_ONLY_CATEGORY_SLUGS } from "@/lib/categories";
 import type { Product, ProductVariant } from "@/lib/catalog-types";
 
 export type { Product, ProductVariant } from "@/lib/catalog-types";
@@ -25,6 +25,7 @@ function toProduct(row: ProductRow): Product {
     active: row.active,
     colorCount: row.colorCount,
     categorySlug: row.category.slug,
+    consultOnly: CONSULT_ONLY_CATEGORY_SLUGS.has(row.category.slug),
     variants: row.variants.map((v) => ({
       id: v.id,
       name: v.name,
@@ -96,9 +97,9 @@ export async function getAllProductsForAdmin(): Promise<Product[]> {
   return rows.map(toProduct);
 }
 
-// Las imágenes se manejan aparte (subida a Storage en la server action, ver
-// syncProductImages), así que el input de datos no las incluye.
-export type ProductInput = Omit<Product, "id" | "images">;
+// Las imágenes se manejan aparte (subida a Storage en la server action) y
+// `consultOnly` se deriva de la categoría, así que el input no los incluye.
+export type ProductInput = Omit<Product, "id" | "images" | "consultOnly">;
 
 async function categoryIdForSlug(slug: string): Promise<string> {
   const category = await prisma.category.findUnique({ where: { slug } });

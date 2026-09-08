@@ -46,10 +46,18 @@ export default async function ProductoPage({
 
         <div>
           <h1 className="text-3xl font-bold text-neutral-900">{product.name}</h1>
-          <p className="mt-2 text-2xl font-semibold text-brand">{formatPrice(product.price)}</p>
-          <p className="mt-1 text-sm text-neutral-500">
-            {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock por el momento"}
-          </p>
+          {product.consultOnly ? (
+            <p className="mt-2 text-lg font-semibold text-brand">Precio a consultar</p>
+          ) : (
+            <>
+              <p className="mt-2 text-2xl font-semibold text-brand">
+                {formatPrice(product.price)}
+              </p>
+              <p className="mt-1 text-sm text-neutral-500">
+                {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock por el momento"}
+              </p>
+            </>
+          )}
           <p className="mt-4 text-neutral-700">{product.description}</p>
 
           <div className="mt-6">

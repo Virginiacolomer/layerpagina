@@ -23,13 +23,16 @@ export function ProductDetailActions({
   const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
   const outOfStock = availableStock === 0;
 
+  const consultOnly = product.consultOnly;
   const needsColors = product.colorCount > 0;
-  const colorsComplete = !needsColors || colors.length === product.colorCount;
+  // En productos de sólo consulta la elección de color es opcional (sólo
+  // arma el mensaje de WhatsApp); si se compra online, es obligatoria.
+  const colorsComplete = consultOnly || !needsColors || colors.length === product.colorCount;
 
   function toggleColor(name: string) {
     setColors((prev) => {
       if (prev.includes(name)) return prev.filter((c) => c !== name);
-      if (prev.length >= product.colorCount) return prev; // ya llegó al máximo
+      if (!consultOnly && prev.length >= product.colorCount) return prev;
       return [...prev, name];
     });
   }
@@ -46,6 +49,8 @@ export function ProductDetailActions({
     setTimeout(() => setAdded(false), 2000);
   }
 
+  const colorMax = consultOnly ? COLOR_PALETTE.length : product.colorCount;
+
   return (
     <div className="flex flex-col gap-5">
       {product.variants.length > 0 && (
@@ -57,7 +62,7 @@ export function ProductDetailActions({
                 key={variant.id}
                 type="button"
                 onClick={() => setSelectedVariantId(variant.id)}
-                disabled={variant.stock === 0}
+                disabled={variant.stock === 0 && !consultOnly}
                 className={`rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                   selectedVariantId === variant.id
                     ? "border-brand bg-brand text-white"
@@ -71,18 +76,24 @@ export function ProductDetailActions({
         </div>
       )}
 
-      {needsColors && (
+      {(needsColors || consultOnly) && (
         <div>
           <p className="text-sm font-semibold text-neutral-800">
-            Elegí {product.colorCount} {product.colorCount === 1 ? "color" : "colores"}{" "}
-            <span className="font-normal text-neutral-500">
-              ({colors.length}/{product.colorCount})
-            </span>
+            {consultOnly ? (
+              <>Colores (opcional)</>
+            ) : (
+              <>
+                Elegí {product.colorCount} {product.colorCount === 1 ? "color" : "colores"}{" "}
+                <span className="font-normal text-neutral-500">
+                  ({colors.length}/{product.colorCount})
+                </span>
+              </>
+            )}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {COLOR_PALETTE.map((color) => {
               const selected = colors.includes(color.name);
-              const atMax = colors.length >= product.colorCount;
+              const atMax = colors.length >= colorMax;
               return (
                 <button
                   key={color.name}
@@ -111,48 +122,69 @@ export function ProductDetailActions({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <label htmlFor="quantity" className="text-sm font-semibold text-neutral-800">
-          Cantidad
-        </label>
-        <input
-          id="quantity"
-          type="number"
-          min={1}
-          max={Math.max(availableStock, 1)}
-          value={quantity}
-          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-          className="w-20 rounded-lg border border-brand-gray-300 px-3 py-1.5 outline-none focus:border-brand"
-        />
-      </div>
+      {consultOnly ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-neutral-600">
+            Este es un producto personalizado. Escribinos por WhatsApp con lo que necesitás y
+            coordinamos el diseño, el precio y los tiempos.
+          </p>
+          {whatsappNumber ? (
+            <a
+              href={whatsappLink(whatsappNumber, message)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-fit rounded-full bg-brand px-6 py-3 font-semibold text-white transition hover:opacity-90"
+            >
+              Consultar por WhatsApp
+            </a>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3">
+            <label htmlFor="quantity" className="text-sm font-semibold text-neutral-800">
+              Cantidad
+            </label>
+            <input
+              id="quantity"
+              type="number"
+              min={1}
+              max={Math.max(availableStock, 1)}
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              className="w-20 rounded-lg border border-brand-gray-300 px-3 py-1.5 outline-none focus:border-brand"
+            />
+          </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          disabled={outOfStock || !colorsComplete}
-          className="rounded-full bg-brand px-6 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {outOfStock
-            ? "Sin stock"
-            : added
-              ? "¡Agregado!"
-              : !colorsComplete
-                ? `Elegí ${product.colorCount - colors.length} color(es) más`
-                : "Agregar al carrito"}
-        </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={outOfStock || !colorsComplete}
+              className="rounded-full bg-brand px-6 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {outOfStock
+                ? "Sin stock"
+                : added
+                  ? "¡Agregado!"
+                  : !colorsComplete
+                    ? `Elegí ${product.colorCount - colors.length} color(es) más`
+                    : "Agregar al carrito"}
+            </button>
 
-        {whatsappNumber ? (
-          <a
-            href={whatsappLink(whatsappNumber, message)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-brand-gray-300 px-6 py-3 font-semibold text-neutral-700 transition hover:border-brand hover:text-brand"
-          >
-            Consultar por WhatsApp
-          </a>
-        ) : null}
-      </div>
+            {whatsappNumber ? (
+              <a
+                href={whatsappLink(whatsappNumber, message)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-brand-gray-300 px-6 py-3 font-semibold text-neutral-700 transition hover:border-brand hover:text-brand"
+              >
+                Consultar por WhatsApp
+              </a>
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
 }

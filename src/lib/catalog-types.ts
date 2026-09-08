@@ -19,6 +19,8 @@ export type Product = {
   stock: number;
   active: boolean;
   categorySlug: string;
+  // true si la categoría es "sólo consulta": no se compra online.
+  consultOnly: boolean;
   variants: ProductVariant[];
   // URLs públicas de las fotos, en orden. Vacío = se muestra el placeholder.
   images: string[];
