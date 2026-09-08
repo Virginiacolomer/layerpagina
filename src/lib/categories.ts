@@ -9,16 +9,11 @@ export function slugify(name: string) {
 
 export const CATEGORY_NAMES = [
   "Personajes",
-  "Dioramas",
   "Personalizados",
-  "Llaveros",
   "Hogar y decoración",
   "Organizadores de escritorio",
-  "Productos para eventos",
   "Juegos didácticos",
   "Aviones",
-  "Juguetes para mascotas",
-  "Comederos para mascotas",
 ] as const;
 
 // Categorías cuyos productos NO se compran online: sólo se consultan por
