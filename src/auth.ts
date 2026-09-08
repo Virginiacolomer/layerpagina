@@ -3,6 +3,11 @@ import Credentials from "next-auth/providers/credentials";
 import { verifyUserCredentials } from "@/lib/data/users";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Detrás del proxy de Vercel el Host lo fija Vercel, así que es seguro
+  // confiar en él. Sin esto Auth.js tira "UntrustedHost" y devuelve el error
+  // genérico de "server configuration".
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   debug: process.env.AUTH_DEBUG === "true",
