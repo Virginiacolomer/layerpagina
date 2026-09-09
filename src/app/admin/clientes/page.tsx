@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCustomersWithOrderStats } from "@/lib/data/users";
-import { whatsappLink } from "@/lib/contact";
+import { whatsappLink, waNumber } from "@/lib/contact";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Clientes | Admin Layer" };
@@ -44,7 +44,7 @@ export default async function AdminClientesPage() {
                   <td className="px-4 py-3 text-right">
                     {customer.lastPhone && (
                       <a
-                        href={whatsappLink(customer.lastPhone.replace(/\D/g, ""))}
+                        href={whatsappLink(waNumber(customer.lastPhone))}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm font-medium text-brand hover:underline"

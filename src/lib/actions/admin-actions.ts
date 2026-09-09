@@ -106,10 +106,8 @@ export async function toggleProductActiveFormAction(formData: FormData) {
   revalidatePath("/productos");
 }
 
-export async function updateOrderStatusFormAction(formData: FormData) {
+export async function changeOrderStatus(id: string, status: OrderStatus) {
   await assertAdmin();
-  const id = String(formData.get("id"));
-  const status = String(formData.get("status")) as OrderStatus;
   await updateOrderStatus(id, status);
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${id}`);

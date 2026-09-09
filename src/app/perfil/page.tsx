@@ -3,18 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { getOrdersByUser } from "@/lib/data/orders";
+import { orderStatusLabel } from "@/lib/order-status";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Mi cuenta | Layer" };
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pendiente",
-  PAID: "Pagado",
-  PREPARING: "En preparación",
-  SHIPPED: "Enviado",
-  DELIVERED: "Entregado",
-  CANCELLED: "Cancelado",
-};
 
 export default async function PerfilPage() {
   const session = await auth();
@@ -49,7 +41,7 @@ export default async function PerfilPage() {
                   <p className="font-medium text-neutral-900">Pedido #{order.id}</p>
                   <p className="text-neutral-500">
                     {new Date(order.createdAt).toLocaleDateString("es-AR")} ·{" "}
-                    {STATUS_LABELS[order.status] ?? order.status}
+                    {orderStatusLabel(order.status)}
                   </p>
                 </div>
                 <p className="font-semibold text-brand">{formatPrice(order.total)}</p>

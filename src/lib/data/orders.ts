@@ -1,14 +1,9 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import type { OrderStatusValue } from "@/lib/order-status";
 
-export type OrderStatus =
-  | "PENDING"
-  | "PAID"
-  | "PREPARING"
-  | "SHIPPED"
-  | "DELIVERED"
-  | "CANCELLED";
+export type OrderStatus = OrderStatusValue;
 
 export type OrderItem = {
   productId: string;

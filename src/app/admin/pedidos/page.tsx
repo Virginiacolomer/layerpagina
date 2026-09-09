@@ -1,27 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllOrders } from "@/lib/data/orders";
+import { OrderStatusSelect } from "@/components/order-status-select";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos | Admin Layer" };
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pendiente",
-  PAID: "Pagado",
-  PREPARING: "En preparación",
-  SHIPPED: "Enviado",
-  DELIVERED: "Entregado",
-  CANCELLED: "Cancelado",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  PAID: "bg-blue-100 text-blue-800",
-  PREPARING: "bg-blue-100 text-blue-800",
-  SHIPPED: "bg-purple-100 text-purple-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-neutral-200 text-neutral-600",
-};
 
 export default async function AdminPedidosPage({
   searchParams,
@@ -76,11 +59,7 @@ export default async function AdminPedidosPage({
                   </td>
                   <td className="px-4 py-3 font-medium">{formatPrice(order.total)}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[order.status] ?? "bg-neutral-100 text-neutral-700"}`}
-                    >
-                      {STATUS_LABELS[order.status] ?? order.status}
-                    </span>
+                    <OrderStatusSelect orderId={order.id} status={order.status} />
                   </td>
                 </tr>
               ))}
