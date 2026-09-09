@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAllCategories } from "@/lib/data/products";
 import { LayerMark } from "@/components/layer-logo";
 import { WavyBackground } from "@/components/wavy-background";
+import { ScrollFadeImage } from "@/components/scroll-fade-image";
 
 export default function Home() {
   const categories = getAllCategories();
@@ -25,7 +26,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto flex w-full max-w-4xl flex-col items-center gap-4 px-6 py-14 text-center">
+      <section className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-6 py-16 text-center">
         <LayerMark className="h-12 w-12" />
         <h2 className="text-2xl font-bold text-neutral-900">Quiénes somos</h2>
         <p className="mx-auto max-w-2xl text-neutral-700">
@@ -34,6 +35,7 @@ export default function Home() {
           personalizados y repuestos— cuidando cada detalle, del diseño a la impresión. Hacemos
           envíos a todo el país.
         </p>
+        <ScrollFadeImage src="/nosotros.jpg" alt="El equipo de Layer en una feria con sus impresiones 3D" />
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-6 py-14">
