@@ -1,17 +1,23 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { CartIcon } from "@/components/cart-icon";
+import { MobileNav } from "@/components/mobile-nav";
 import { LayerMark } from "@/components/layer-logo";
 import { INSTAGRAM_URL, WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 
 export async function SiteHeader() {
   const session = await auth();
+  const isLoggedIn = Boolean(session?.user);
+  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
-    <header className="border-b border-brand-gray-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold text-brand">
-          <LayerMark className="h-8 w-8" />
+    <header className="relative border-b border-brand-gray-200 bg-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-xl font-extrabold text-brand sm:text-2xl"
+        >
+          <LayerMark className="h-7 w-7 sm:h-8 sm:w-8" />
           Layer
         </Link>
 
@@ -19,10 +25,10 @@ export async function SiteHeader() {
           <Link href="/productos" className="hover:text-brand">
             Catálogo
           </Link>
-          <Link href={session?.user ? "/perfil" : "/login"} className="hover:text-brand">
-            {session?.user ? "Mi cuenta" : "Ingresar"}
+          <Link href={isLoggedIn ? "/perfil" : "/login"} className="hover:text-brand">
+            {isLoggedIn ? "Mi cuenta" : "Ingresar"}
           </Link>
-          {session?.user?.role === "ADMIN" && (
+          {isAdmin && (
             <Link href="/admin/pedidos" className="hover:text-brand">
               Admin
             </Link>
@@ -30,7 +36,7 @@ export async function SiteHeader() {
           <CartIcon />
         </nav>
 
-        <div className="flex items-center gap-3 text-sm">
+        <div className="hidden items-center gap-3 text-sm sm:flex">
           {INSTAGRAM_URL && (
             <a
               href={INSTAGRAM_URL}
@@ -53,6 +59,8 @@ export async function SiteHeader() {
             </a>
           )}
         </div>
+
+        <MobileNav isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
       </div>
     </header>
   );
