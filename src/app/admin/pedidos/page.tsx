@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllOrders } from "@/lib/data/orders";
 import { OrderStatusSelect } from "@/components/order-status-select";
+import { waNumber } from "@/lib/contact";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos | Admin Layer" };
@@ -59,7 +60,12 @@ export default async function AdminPedidosPage({
                   </td>
                   <td className="px-4 py-3 font-medium">{formatPrice(order.total)}</td>
                   <td className="px-4 py-3">
-                    <OrderStatusSelect orderId={order.id} status={order.status} />
+                    <OrderStatusSelect
+                      orderId={order.id}
+                      status={order.status}
+                      customerFirstName={order.userName.split(" ")[0]}
+                      customerPhone={waNumber(order.shippingPhone)}
+                    />
                   </td>
                 </tr>
               ))}

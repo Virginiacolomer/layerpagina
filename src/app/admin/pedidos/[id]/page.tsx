@@ -19,7 +19,6 @@ export default async function AdminPedidoDetailPage({
 
   const phone = waNumber(order.shippingPhone);
   const firstName = order.userName.split(" ")[0];
-  const confirmationMessage = `Hola ${firstName}! Tu pedido #${order.id} en Layer quedó confirmado ✅. Nos vamos a estar comunicando en breve para coordinar la entrega. ¡Gracias por tu compra!`;
 
   return (
     <div>
@@ -28,33 +27,18 @@ export default async function AdminPedidoDetailPage({
         {new Date(order.createdAt).toLocaleString("es-AR")}
       </p>
 
-      <div className="mt-6 flex flex-wrap items-end gap-3">
-        <div>
-          <p className="text-sm font-medium text-neutral-800">Estado del pedido</p>
-          <div className="mt-1">
-            <OrderStatusSelect orderId={order.id} status={order.status} />
-          </div>
+      <div className="mt-6">
+        <p className="text-sm font-medium text-neutral-800">Estado del pedido</p>
+        <div className="mt-1">
+          <OrderStatusSelect
+            orderId={order.id}
+            status={order.status}
+            customerFirstName={firstName}
+            customerPhone={phone}
+            variant="full"
+          />
         </div>
       </div>
-
-      {order.status === "PAID" && (
-        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
-          <p className="text-sm font-semibold text-green-900">
-            Pago confirmado — avisale al cliente
-          </p>
-          <p className="mt-1 text-sm text-green-800">
-            Se abre WhatsApp con este mensaje: “{confirmationMessage}”
-          </p>
-          <a
-            href={whatsappLink(phone, confirmationMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-          >
-            Avisar confirmación por WhatsApp
-          </a>
-        </div>
-      )}
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         <div className="rounded-xl border border-brand-gray-200 p-5">
