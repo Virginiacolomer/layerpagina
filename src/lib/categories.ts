@@ -12,7 +12,8 @@ export const CATEGORY_NAMES = [
   "Personalizados",
   "Hogar y decoración",
   "Organizadores de escritorio",
-  "Juegos didácticos",
+  "Juegos",
+  "Educación",
   "Aviones",
 ] as const;
 

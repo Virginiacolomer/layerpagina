@@ -21,7 +21,7 @@ const fontBody = Nunito_Sans({
 export const metadata: Metadata = {
   title: "Layer | Diseñamos en capas, pensamos en grande",
   description:
-    "Impresión 3D a medida: personajes, personalizados, decoración, juegos didácticos, aviones y más.",
+    "Impresión 3D a medida: personajes, personalizados, decoración, juegos, educación, aviones y más.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
